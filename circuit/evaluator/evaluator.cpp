@@ -61,12 +61,14 @@ struct AndNot_network {
     int guess() {
         // return the network's guess for MNIST input
         int g = -1;
+
         for (int counter = 0; counter < 10; counter++) {
             if (value[result_nodes[counter]]) {
                 assert(g == -1); //the network returned more than 1 guess
                 g = counter;
             }
         }
+
         assert(g != -1); // the network didn't guess
         return g;
     }
@@ -82,6 +84,7 @@ bool make_test(int n, AndNot_network &net) {
     for (int i = 0; i < INPUT_NODES; i++) {
         input_values[i] = (input_image[i] == '1');
     }
+
     net.input_into(input_values);
     net.calculatenetwork();
 

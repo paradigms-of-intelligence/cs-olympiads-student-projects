@@ -1,26 +1,23 @@
 #include<fstream>
 #include<vector>
 #include<map>
-//The sus ඞ
 
 const size_t INPUT_SIZE = 784;
-const int32_t ALWAYS_TRUE = 2147483647;
-const int32_t ALWAYS_FALSE = 2147483646;
-
+const int ALWAYS_TRUE = 2147483647;
+const int ALWAYS_FALSE = 2147483646;
 
 #pragma region declarations
 
 //Beginning of declarations
-enum
-{
+
+enum {
     EXIT_WRONG_USAGE = 1,
     EXIT_FILE_ERROR = 2,
     EXIT_INVALID_NODE_DATA = 3,
     EXIT_TOPOSORT_FAILED = 4
 };
 
-void __program_abort(size_t exit_code)
-{
+void __program_abort(size_t exit_code) {
     std::printf("Error code: %d", exit_code);
     switch (exit_code)
     {
@@ -44,17 +41,14 @@ void __program_abort(size_t exit_code)
     exit(1);
 }
 
-inline int32_t __read_int32_t(std::ifstream &in)
+inline int __read_int32_t(std::ifstream &in)
 {
-    int32_t result = 0;
-    try
-    {
-        in.read(reinterpret_cast<char*>(&result), 4);
-        if(in.fail()) throw std::runtime_error("Reading failed");
-    }
-    catch(const std::exception& e)
-    {
-        std::printf(e.what());
+    int result = 0;
+
+    in.read(reinterpret_cast<char*>(&result), 4);
+
+    if (in.fail()) {
+        std::printf("Reading failed");
         __program_abort(EXIT_FILE_ERROR);
     }
     return result;
@@ -62,19 +56,13 @@ inline int32_t __read_int32_t(std::ifstream &in)
 
 struct Node
 {
-    int32_t type;
-    int32_t id;
-    int32_t link_a;
-    int32_t link_b;
+    int type;
+    int id;
+    int link_a;
+    int link_b;
     
     //Default constructor
-    Node(int32_t _type, int32_t _id, int32_t _link_a, int32_t _link_b)
-    {
-        type = _type;
-        id = _id;
-        link_a = _link_a;
-        link_b = _link_b;
-    }
+    Node(int _type, int _id, int _link_a, int _link_b) : type(_type), id(_id), link_a(_link_a), link_b(_link_b) {};
 };
 
 
@@ -92,15 +80,14 @@ std::vector<Node> input_nodes;
 
 //Number of new nodes, avoid clashes between ids
 size_t offset = 0;
-int32_t node_count;
+int node_count;
 
 bool toposort_nodes()
 {
     //TODO: change this please :(
-    std::map<int32_t, std::vector<int32_t>> reverse_link;
-    for(Node& node : input_nodes)
-    {
-        if(abs(node.link_a) == ALWAYS_FALSE || abs(node.link_b) == ALWAYS_FALSE) 
+    std::map<int, std::vector<int>> reverse_link;
+    for(Node& node : input_nodes) {
+        if(abs(node.link_a) == ALWAYS_FALSE || abs(node.link_b) == ALWAYS_TRUE) 
             continue;
 
         reverse_link[node.link_a].emplace_back(node.id);
@@ -110,7 +97,7 @@ bool toposort_nodes()
 
 int main(int argc, char const *argv[])
 {
-    if(argc != 2) __program_abort(EXIT_WRONG_USAGE);
+    if (argc != 2) __program_abort(EXIT_WRONG_USAGE);
 
     std::ifstream t16_ifstream;
     std::ofstream t2_ofstream;
@@ -118,12 +105,10 @@ int main(int argc, char const *argv[])
     const char* t16_in_path = argv[1];
     const char* t2_out_path = argv[2];
     
-    try {
-        t16_ifstream = std::ifstream(t16_in_path, std::ios::binary | std::ios::in);
-        t2_ofstream = std::ofstream(t2_out_path, std::ios::binary | std::ios::out);
-    }
-    catch(const std::exception& e) {
-        std::printf(e.what());
+    t16_ifstream = std::ifstream(t16_in_path, std::ios::binary | std::ios::in);
+    t2_ofstream = std::ofstream(t2_out_path, std::ios::binary | std::ios::out);
+
+    if (t16_ifstream.fail() || t2_ofstream.fail()) {
         __program_abort(EXIT_FILE_ERROR);
     }
     
@@ -131,7 +116,7 @@ int main(int argc, char const *argv[])
 
     for(size_t i = 0; i < node_count; ++i)
     {       
-        int32_t node_value[4];
+        int node_value[4];
         node_value[0] = __read_int32_t(t16_ifstream);
         node_value[1] = __read_int32_t(t16_ifstream);
         node_value[2] = __read_int32_t(t16_ifstream);
