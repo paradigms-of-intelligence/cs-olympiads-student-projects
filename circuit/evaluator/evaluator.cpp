@@ -2,17 +2,6 @@
 #include "circuit.h"
 using namespace std;
 
-
-// int reading from binary file
-int readint(ifstream &stream) {
-    char * buffer = new char [32];
-    stream.read((char*)&buffer, 4);
-    int r = strtol(buffer, &buffer, 2);
-    delete[] buffer;
-    //cout << r << " DEGUB" << endl;
-    return r;
-}
-
 struct AndNot_network {
     int N;
     vector<bool> value; //bit values for calculation
@@ -22,17 +11,17 @@ struct AndNot_network {
     void init() {
         // initialize current network
         ifstream graphinput(networkinputfile, ios::binary);
-        N = readint(graphinput)+1;
+        N = __read_int32_t(graphinput)+1;
         value.resize(N); C_1.resize(N); C_2.resize(N);
 
         for (int i = 0; i < N; i++) {
-            int id = readint(graphinput);
-            C_1[id] = readint(graphinput);
-            C_2[id] = readint(graphinput);
+            int id = __read_int32_t(graphinput);
+            C_1[id] = __read_int32_t(graphinput);
+            C_2[id] = __read_int32_t(graphinput);
         }
 
         result_nodes.resize(10);
-        for (int i = 0; i < 10; i++) result_nodes[i] = readint(graphinput);
+        for (int i = 0; i < 10; i++) result_nodes[i] = __read_int32_t(graphinput);
         graphinput.close();
     }
 
