@@ -1,9 +1,9 @@
 # Project Documentation
 
-
 ### 16_types gate network:
 
 **Binary file** size table:
+
 | Use | Bit size |
 | -------- | ------- |
 | `node_count` | `32` |
@@ -12,6 +12,7 @@
 | `struct Node` | `100` |
 
 **Node** size table:
+
 | Use | Bit size |
 | -------- | ------- |
 | `type` | `4` |
@@ -24,6 +25,7 @@
 ### and_not gate network:
  :warning: The network is 1-based due to negative connections
 **Binary file** size table:
+
 | Use | Bit size |
 | -------- | ------- |
 | `node_count` | `32` |
@@ -32,6 +34,7 @@
 | `struct Node` | `96` |
 
 **Node** size table:
+
 | Use | Bit size |
 | -------- | ------- |
 | `id` | `32` |

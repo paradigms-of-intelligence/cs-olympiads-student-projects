@@ -82,8 +82,7 @@ std::vector<Node> input_nodes;
 size_t offset = 0;
 int node_count;
 
-bool toposort_nodes()
-{
+bool toposort_nodes() {
     //TODO: change this please :(
     std::map<int, std::vector<int>> reverse_link;
     for(Node& node : input_nodes) {
