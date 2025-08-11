@@ -37,7 +37,7 @@
 | `id` | `32` |
 | `link_a_not` | `1` |
 | `link_a` | `31` |
-| `link_b_not` | `31` |
+| `link_b_not` | `1` |
 | `link_b` | `31` |
 
  :warning: Links that point to $2^{31} - 1$ are to be considered always `true`. Similarly $2^{31} - 2$ links are to be considered always `false`.
