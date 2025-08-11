@@ -12,6 +12,6 @@ const int TESTS = 100;
 
 #pragma region declarations
 
-inline int32_t __read_int32_t(std::ifstream &in);
+inline int32_t read_int32_t(std::ifstream &in);
 
 #endif
