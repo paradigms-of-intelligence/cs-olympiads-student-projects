@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#include "circuit.h"
+#include "../circuit.h"
 using namespace std;
 
 
@@ -21,7 +21,7 @@ struct AndNot_network {
 
     void init() {
         // initialize current network
-        ifstream graphinput(networkinputfile, ios::binary);
+        ifstream graphinput(NETWORK2_FILE_NAME, ios::binary);
         N = readint(graphinput)+1;
         value.resize(N); C_1.resize(N); C_2.resize(N);
 
@@ -49,8 +49,8 @@ struct AndNot_network {
                     assert(-id < N);
                     c = !value[-id];
                 }
-                else if (id == one) c = 1;
-                else if (id == zero) c = 0;
+                else if (id == ALWAYS_TRUE) c = 1;
+                else if (id == ALWAYS_FALSE) c = 0;
                 else c = value[id];
                 return c;
             };
@@ -76,7 +76,8 @@ struct AndNot_network {
 
 bool make_test(int n, AndNot_network &net) {
     // 1 if test correct, 0 if not
-    ifstream current_input(baseinputfile+(char)n+".txt");
+    //to fix, variable `n` is useless
+    ifstream current_input(BASE_INPUT_FILE);
     vector<bool> input_values;
     string input_image;
     getline(current_input, input_image);
