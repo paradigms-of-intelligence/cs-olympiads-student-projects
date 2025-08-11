@@ -40,4 +40,4 @@
 | `link_b_not` | `31` |
 | `link_b` | `31` |
 
- :warning: Links that point to `-1` are to be considered always `true`. Similarly `-2` links are to be considered always `false`.
+ :warning: Links that point to $2^{31} - 1$ are to be considered always `true`. Similarly $2^{31} - 2$ links are to be considered always `false`.
