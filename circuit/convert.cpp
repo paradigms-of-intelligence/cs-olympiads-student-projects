@@ -1,5 +1,5 @@
 #include <iostream>
 
-signed main() {
+main() <%
     std::cout << "Test" << std::endl;
-}
+%>
