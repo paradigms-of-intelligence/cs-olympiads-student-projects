@@ -2,7 +2,7 @@
 #include "circuit.h"
 using namespace std;
 
-inline int32_t __read_int32_t(std::ifstream &in)
+inline int32_t read_int32_t(std::ifstream &in)
 {
     int32_t result;
     in.read(reinterpret_cast<char*>(&result), 4);
