@@ -4,9 +4,8 @@ from jax import grad
 import math
 
 global NETWORK_SIZE 
-global nodes    #Gate
 global OUTPUT_NODES
-global nodes                            #Gate
+global nodes            #Gate
 
 EPOCH_COUNT = 10
 INPUT_SIZE = 784
@@ -55,14 +54,12 @@ def softmax(x):
     e_x = jnp.exp(x - jnp.max(x))
     return e_x / jnp.sum(e_x)
 
-def f(x):
-    def a(a, b):
-        return (x & 1) * a * b + (x & 2) * a * (1 - b) + (x & 4) * (1 - a) * b + (x & 8) * (1 - a) * (1 - b)
+# def f_todo(x):
+#     def a(a, b):
+#         return (x & 1) * a * b + (x & 2) * a * (1 - b) + (x & 4) * (1 - a) * b + (x & 8) * (1 - a) * (1 - b)
 
-    return a
+#     return a
 
-
-def function(a: float, b: float, p):
 def inference_function(a: float, b: float, p):
     pr = a*b
     #SUUUUUUUUUUUUUUUS
@@ -110,12 +107,6 @@ def inference():
         v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
         Gate.value = inference_function(v1, v2, Gate.p)
 
-
-def backpropagate():
-    #caluclate the loss function
-
-    #
-    pass
 def backpropagate(answer):
     # backpropagate through every node
     # TODO: de-sus this: de-marago this
