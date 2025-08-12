@@ -2,14 +2,14 @@ import random
 import jax 
 import jax.numpy as jnp
 
-
 global NETWORK_SIZE 
 global nodes                            #Gate
-
 
 EPOCH_COUNT = 10
 INPUT_SIZE = 784
 INPUT_NAME = "../"
+
+# TODO: Simplyfy This all. With the Idea of the 4 bools instead of the Gates.
 
 class Gate:
     p = [random.gauss() for x in range (0, 16)]
@@ -24,13 +24,19 @@ def softmax(x):
     e_x = jnp.exp(x - jnp.max(x))
     return e_x / jnp.sum(e_x)
 
+def f(x):
+    def a(a, b):
+        return (x & 1) * a * b + (x & 2) * a * (1 - b) + (x & 4) * (1 - a) * b + (x & 8) * (1 - a) * (1 - b)
+
+    return a
+
 
 def function(a: float, b: float, p):
     pr = a*b
     #SUUUUUUUUUUUUUUUS
     softmax(p)
     f = []
-    f[0] = 0
+    f[0] = 0 
     f[1] = pr*p[1]
     f[2] = (a-pr)*p[2]
     f[3] = a*p[3]
@@ -56,8 +62,6 @@ def function(a: float, b: float, p):
 
     return sum
 
-
-    
 def activation(node: Gate):
     v1, v2 = nodes[Gate.a].v, nodes[Gate.b].v
     Gate.v = function(v1, v2, Gate.p)    

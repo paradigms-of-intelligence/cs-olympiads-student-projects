@@ -30,4 +30,7 @@ int main() {
         std::cout << minimum++ << " " << minimum++ << "\n";
         maximum++;
     }
+
+    // There are 10 Output Nodes.
+    std::cout << 10 << std::endl;
 }
