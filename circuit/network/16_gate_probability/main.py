@@ -51,9 +51,6 @@ def function(a: float, b: float, p):
     for l in f: 
         sum += l
 
-    if sum > 1.0:
-        sum = softmax(sum)
-
     return sum
 
 
@@ -80,6 +77,9 @@ def inference():
 
 
 def backpropagate():
+    #caluclate the loss function
+
+    #
     pass
 
 def main():
