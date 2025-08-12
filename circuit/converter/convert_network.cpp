@@ -250,8 +250,8 @@ int main(int argc, char const *argv[])
 {
     // if(argc != 3) program_abort(EXIT_WRONG_USAGE);
 
-    std::ifstream t16_ifstream(NETWORK2_FILE_NAME, std::ios::binary | std::ios::in);
-    std::ofstream t2_ofstream(NETWORK16_FILE_NAME, std::ios::binary | std::ios::out);
+    std::ifstream t16_ifstream(NETWORK16_FILE_NAME, std::ios::binary | std::ios::in);
+    std::ofstream t2_ofstream(NETWORK2_FILE_NAME, std::ios::binary | std::ios::out);
 
     node_count = read_int32_t(t16_ifstream);
 
