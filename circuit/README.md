@@ -1,6 +1,6 @@
 # Project Documentation
 
-### 16_types gate network:
+## 16_types gate network
 
 **Binary file** size table:
 
@@ -20,7 +20,8 @@
 | `link_a` | `32` |
 | `link_b` | `32` |
 
-### and_not gate network:
+## and_not gate network
+
  :warning: The network is 1-based due to negative connections
 **Binary file** size table:
 
