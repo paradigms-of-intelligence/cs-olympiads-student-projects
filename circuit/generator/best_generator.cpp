@@ -60,6 +60,7 @@ int main() {
     unused.insert(++node_count);
   }
   std::vector<int> off;
+  std::cout << node_count << std::endl;
   off.push_back(0);
   for(int i = 1; i <= conn.size(); ++i) {
     if(unused.find(i) != unused.end()) {
