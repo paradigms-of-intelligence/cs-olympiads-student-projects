@@ -7,20 +7,18 @@
 | Use | Bit size |
 | -------- | ------- |
 | `node_count` | `32` |
-| `struct Node` | `100` |
+| `struct Node` | `128` |
 | $\dots$ | $\dots$ |
-| `struct Node` | `100` |
+| `struct Node` | `128` |
 
 **Node** size table:
 
 | Use | Bit size |
 | -------- | ------- |
-| `type` | `4` |
+| `type` | `32` |
 | `id` | `32` |
-| `link_a_not` | `1` |
-| `link_a` | `31` |
-| `link_b_not` | `31` |
-| `link_b` | `31` |
+| `link_a` | `32` |
+| `link_b` | `32` |
 
 ### and_not gate network:
  :warning: The network is 1-based due to negative connections
@@ -32,6 +30,9 @@
 | `struct Node` | `96` |
 | $\dots$ | $\dots$ |
 | `struct Node` | `96` |
+| `output0` | `32` |
+| $\dots$ | $\dots$ |
+| `output9` | `32` |
 
 **Node** size table:
 
@@ -44,4 +45,4 @@
  :warning: Links that point to $2^{31} - 1$ are to be considered always `true`. Similarly $2^{31} - 2$ links are to be considered always `false`.
  Negative links represent not nodes.
 
- At the end of the 
+ The nodes in the network are topolgically sorted.
