@@ -6,10 +6,13 @@ import math
 global NETWORK_SIZE 
 global nodes    #Gate
 global OUTPUT_NODES
+global nodes                            #Gate
 
 EPOCH_COUNT = 10
 INPUT_SIZE = 784
 INPUT_NAME = "../"
+
+# TODO: Simplyfy This all. With the Idea of the 4 bools instead of the Gates.
 ALPHA = 0.001
 BETA2 = .999
 BETA1 = .9
@@ -52,8 +55,20 @@ def softmax(x):
     e_x = jnp.exp(x - jnp.max(x))
     return e_x / jnp.sum(e_x)
 
+def f(x):
+    def a(a, b):
+        return (x & 1) * a * b + (x & 2) * a * (1 - b) + (x & 4) * (1 - a) * b + (x & 8) * (1 - a) * (1 - b)
+
+    return a
+
+
+def function(a: float, b: float, p):
 def inference_function(a: float, b: float, p):
     pr = a*b
+    #SUUUUUUUUUUUUUUUS
+    softmax(p)
+    f = []
+    f[0] = 0 
     p = softmax(p)
 
     f = [0 for _ in range (0, 16)]
@@ -80,6 +95,11 @@ def inference_function(a: float, b: float, p):
 
     return sum
 
+def activation(node: Gate):
+    v1, v2 = nodes[Gate.a].v, nodes[Gate.b].v
+    Gate.v = function(v1, v2, Gate.p)    
+    pass
+
 
 def inference():
     # feedforward
@@ -91,6 +111,11 @@ def inference():
         Gate.value = inference_function(v1, v2, Gate.p)
 
 
+def backpropagate():
+    #caluclate the loss function
+
+    #
+    pass
 def backpropagate(answer):
     # backpropagate through every node
     # TODO: de-sus this: de-marago this

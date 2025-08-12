@@ -11,7 +11,6 @@ namespace OPTIONS {
   int uni_m = 2, uni_t = 1;
 }
 
-
 constexpr int INPUT_AMOUNT = 28*28;
 int node_count = INPUT_AMOUNT;
 
