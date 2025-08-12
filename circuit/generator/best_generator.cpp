@@ -12,7 +12,7 @@ namespace OPTIONS {
 }
 
 
-constexpr int INPUT_AMOUNT = 8;
+constexpr int INPUT_AMOUNT = 28*28;
 int node_count = INPUT_AMOUNT;
 
 std::random_device dev;
