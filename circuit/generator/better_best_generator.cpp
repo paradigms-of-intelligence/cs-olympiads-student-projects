@@ -9,11 +9,13 @@ int main() {
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dis(1, 28 * 28);
 
+    int O = 50;
+
     // Defining a Size thingy
-    int N = (1 << 10) * 10;
+    int N = (1 << 8) * O;
 
     // Calculating and giving out the size of the Network
-    std::cout << N * 2 - 10 << "\n";
+    std::cout << N * 2 - O << "\n";
 
     // The First and Last Node of the Imaginary unused Nodes arrey.
     int minimum = 28 * 28;
@@ -26,11 +28,11 @@ int main() {
     }
 
     // Merging all the Nodes so that we just have 10 Left. The outputs.
-    while (minimum + 10 < maximum) {
+    while (minimum + O < maximum) {
         std::cout << minimum++ << " " << minimum++ << "\n";
         maximum++;
     }
 
     // There are 10 Output Nodes.
-    std::cout << 10 << std::endl;
+    std::cout << O << std::endl;
 }
