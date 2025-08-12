@@ -2,7 +2,6 @@
 #include "../circuit.h"
 using namespace std;
 
-
 struct AndNot_network {
     int N;
     vector<bool> value; //bit values for calculation

@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 #include "circuit.h"
-using namespace std;
 
 inline int32_t read_int32_t(std::ifstream &in)
 {
