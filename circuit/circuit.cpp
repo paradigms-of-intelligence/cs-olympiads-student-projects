@@ -1,8 +1,11 @@
 #include <bits/stdc++.h>
 #include "circuit.h"
 
-inline int32_t read_int32_t(std::ifstream &in)
-{
+const char* NETWORK2_FILE_NAME = "network.bin";
+const char* NETWORK16_FILE_NAME = "16_type_network.bin";
+const char* BASE_INPUT_FILE = "./testdata/decompled/img_";
+
+int32_t read_int32_t(std::ifstream &in) {
     int32_t result = 0;
     in.read(reinterpret_cast<char*>(&result), 4);
 
@@ -10,7 +13,7 @@ inline int32_t read_int32_t(std::ifstream &in)
     return result;
 }
 
-inline void write_int32_t(std::ofstream &out, int32_t data) {
+void write_int32_t(std::ofstream &out, int32_t data) {
     out.write(reinterpret_cast<char*>(&data), 4);
     if(out.fail()) program_abort(EXIT_FILE_ERROR);
 }

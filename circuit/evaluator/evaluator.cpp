@@ -4,8 +4,8 @@ using namespace std;
 
 struct AndNot_network {
     int N;
-    vector<bool> value; //bit values for calculation
-    vector<int> C_1, C_2; //edges
+    vector<bool> value; // bit values for calculation
+    vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
 
     void init() {
@@ -29,7 +29,7 @@ struct AndNot_network {
         for (int i = 1; i <= INPUT_NODES; i++) value[i] = in[i-1];
     }
 
-    int calculatenetwork() {
+    void calculatenetwork() {
         // calculate all node values
         for (int i = INPUT_NODES+1; i < N; i++) {
             auto getvalue = [&](int id) -> bool{
