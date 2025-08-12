@@ -23,7 +23,6 @@ enum
     EXIT_CONVERSION_ERROR = 6
 };
 
-#pragma region declarations
 
 inline int32_t read_int32_t(std::ifstream &in);
 inline void write_int32_t(std::ofstream &out, int32_t data);
