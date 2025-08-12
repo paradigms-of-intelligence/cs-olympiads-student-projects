@@ -22,8 +22,7 @@ are mapped to [0, 9].
 #pragma region declarations
 
 //Beginning of declarations
-struct Node
-{
+struct Node {
     int32_t type;
     int32_t id;
     int32_t link_a;
@@ -54,10 +53,8 @@ int32_t node_count;
 int32_t first_output_id;
 
 
-void toposort_nodes()
-{
+void toposort_nodes() {
     //Find reverse links
-
     //TODO: change this please :(
     std::map<int32_t, std::vector<int32_t>> reverse_link;
     std::map<int32_t, int32_t> link_count;
@@ -84,42 +81,31 @@ void toposort_nodes()
         if(link_count[node.id] == 0) process_queue.push(node.id);
     }
     
-
-
     size_t processed_count = 0;
-    while(!process_queue.empty())
-    {
-        
+    while(!process_queue.empty()) { 
         int32_t node_id = process_queue.front();
         process_queue.pop();
 
         processed_count++;
 
-        if(node_id > INPUT_NODES)
-            toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        if(node_id > INPUT_NODES) toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
 
         for(int32_t edge : reverse_link[node_id])
         {
-            if(--link_count[edge] == 0)
-                process_queue.push(edge);
+            if(--link_count[edge] == 0) process_queue.push(edge);
         }
-        
     }
-
 }       
 
-void replace_gates()
-{
-    for(size_t i = 0; i < toposorted_nodes.size(); i++)
-    {
+void replace_gates() {
+    for(size_t i = 0; i < toposorted_nodes.size(); i++) {
         std::vector<Node> new_nodes;
 
         int32_t __input_a = toposorted_nodes[i].link_a;    
         int32_t __input_b = toposorted_nodes[i].link_b;
         int32_t __id = toposorted_nodes[i].id;
 
-        switch (toposorted_nodes[i].type)
-        {
+        switch (toposorted_nodes[i].type) {
             case 0: // ALWAYS 0
                 new_nodes.push_back(Node(0, __id, ALWAYS_FALSE, ALWAYS_FALSE));
                 break;
@@ -246,10 +232,7 @@ void replace_gates()
     }
 }
 
-int main(int argc, char const *argv[])
-{
-    // if(argc != 3) program_abort(EXIT_WRONG_USAGE);
-
+int main(int argc, char const *argv[]) {
     std::ifstream t16_ifstream(NETWORK2_FILE_NAME, std::ios::binary | std::ios::in);
     std::ofstream t2_ofstream(NETWORK16_FILE_NAME, std::ios::binary | std::ios::out);
 

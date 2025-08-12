@@ -28,6 +28,6 @@ enum
 inline int32_t read_int32_t(std::ifstream &in);
 inline void write_int32_t(std::ofstream &out, int32_t data);
 
-void program_abort(size_t exit_code);
+[[noreturn]] void program_abort(size_t exit_code);
 
 #endif

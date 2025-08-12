@@ -11,18 +11,14 @@ inline int32_t read_int32_t(std::ifstream &in)
     return result;
 }
 
-
-inline void write_int32_t(std::ofstream &out, int32_t data)
-{
+inline void write_int32_t(std::ofstream &out, int32_t data) {
     out.write(reinterpret_cast<char*>(&data), 4);
     if(out.fail()) program_abort(EXIT_FILE_ERROR);
 }
 
-void program_abort(size_t exit_code)
-{
+void program_abort(size_t exit_code) {
     std::fprintf(stderr, "Error code: %d\n", exit_code);
-    switch (exit_code)
-    {
+    switch (exit_code) {
     case EXIT_WRONG_USAGE:
         std::fprintf(stderr, "Usage: convert_network <t16_in_path> <t2_out_path>\n");
         break;
