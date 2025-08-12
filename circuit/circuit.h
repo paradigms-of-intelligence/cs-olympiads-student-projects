@@ -15,8 +15,7 @@ const int32_t ALWAYS_FALSE = 2147483646;
 
 const int TESTS = 100;
 
-enum
-{
+enum {
     EXIT_WRONG_USAGE = 1,
     EXIT_FILE_ERROR = 2,
     EXIT_INVALID_NODE_DATA = 3,

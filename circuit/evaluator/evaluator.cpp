@@ -84,7 +84,6 @@ bool make_test(int n, AndNot_network &net) {
     return correct[0] == ('0'+net.guess());
 }   
 
-
 int main() {
     // create the network structure
     AndNot_network net;

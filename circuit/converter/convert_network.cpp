@@ -52,7 +52,6 @@ size_t next_free_node;
 int32_t node_count;
 int32_t first_output_id;
 
-
 void toposort_nodes() {
     //Find reverse links
     //TODO: change this please :(
@@ -267,8 +266,7 @@ int main(int argc, char const *argv[]) {
 
     write_int32_t(t2_ofstream, final_node_count);
 
-    for(size_t i = 0; i < final_node_count; i++)
-    {
+    for(size_t i = 0; i < final_node_count; i++) {
         write_int32_t(t2_ofstream, final_nodes[i].id);
         write_int32_t(t2_ofstream, final_nodes[i].link_a);
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
