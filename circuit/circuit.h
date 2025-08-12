@@ -2,6 +2,8 @@
 #define _H_CIRCUIT
 
 #include "string"
+#include <cstdint>
+
 using std::string;
 
 const char* NETWORK2_FILE_NAME = "network.bin";
