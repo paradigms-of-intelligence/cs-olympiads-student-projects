@@ -1,35 +1,62 @@
 import random
-import jax 
 import jax.numpy as jnp
-
+from jax import grad
+import math
 
 global NETWORK_SIZE 
-global nodes                            #Gate
-
+global nodes    #Gate
+global OUTPUT_NODES
 
 EPOCH_COUNT = 10
 INPUT_SIZE = 784
 INPUT_NAME = "../"
+ALPHA = 0.001
+BETA2 = .999
+BETA1 = .9
+EPSILON = 1e-8
+LEARNING_RATE = 0.01
+
+# This should be multiplied by BETA1 and BETA2
+# and be updated for each iteration
+BETA1_TIMESTAMP = 1
+BETA2_TIMESTAMP = 1
 
 class Gate:
-    p = [random.gauss() for x in range (0, 16)]
-    v = 0
+    p = [random.gauss() for _ in range (0, 16)]
+    value = 0
+    
+    v = [0 for _ in range (0, 16)]
+    m = [0 for _ in range (0, 16)]
+    error = 0
 
     def __init__(self, a, b) -> None:
         self.a = a
         self.b = b
 
+    def update_momentum(self, nabla):
+        for i in range (0, 16):
+            self.m[i] = BETA1 * self.m[i] + (1-BETA1) * nabla
+            self.v[i] = BETA2 * self.v[i] + (1-BETA2) * nabla * nabla
+            i_m = self.m[i]/(1-BETA1_TIMESTAMP)
+            i_v = self.v[i]/(1-BETA2_TIMESTAMP)
+            self.p[i] = self.p[i] - ALPHA * i_m[i] / (math.sqrt(i_v[i]) + EPSILON)
+        
+        # propagate_backward
+        nodes[self.a].error += error
+        nodes[self.b].error += error
+        # reset error
+        error = 0
+        
 
 def softmax(x):
     e_x = jnp.exp(x - jnp.max(x))
     return e_x / jnp.sum(e_x)
 
-
-def function(a: float, b: float, p):
+def inference_function(a: float, b: float, p):
     pr = a*b
-    #SUUUUUUUUUUUUUUUS
-    softmax(p)
-    f = []
+    p = softmax(p)
+
+    f = [0 for _ in range (0, 16)]
     f[0] = 0
     f[1] = pr*p[1]
     f[2] = (a-pr)*p[2]
@@ -51,36 +78,48 @@ def function(a: float, b: float, p):
     for l in f: 
         sum += l
 
-    if sum > 1.0:
-        sum = softmax(sum)
-
     return sum
 
 
-    
-def activation(node: Gate):
-    v1, v2 = nodes[Gate.a].v, nodes[Gate.b].v
-    Gate.v = function(v1, v2, Gate.p)    
-    pass
-
 def inference():
-    #read
-
-    with open(INPUT_NAME, 'r') as file:
-        line = map(int, file.readline().strip().split())
-        for i in range (1, INPUT_SIZE+1):
-            nodes[i].v = line[i-1]
-
-
     # feedforward
         # ...
     # must be toposorted
     for i in range (INPUT_SIZE+1, NETWORK_SIZE):
-        activation(i)
+        Gate = nodes[i]
+        v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
+        Gate.value = inference_function(v1, v2, Gate.p)
 
 
-def backpropagate():
-    pass
+def backpropagate(answer):
+    # backpropagate through every node
+    # TODO: de-sus this: de-marago this
+    nabla = [[0 for _ in range (0,16)] for _ in range (0, NETWORK_SIZE)]
+
+    for i in range (0, OUTPUT_NODES.size()):
+        if (i//(OUTPUT_NODES/10) == answer): nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
+        else: nodes[OUTPUT_NODES[i]].error = pow((nodes[OUTPUT_NODES[i]].error), 2)
+
+    for i in range (NETWORK_SIZE, INPUT_SIZE, -1):
+        gate = nodes[i]
+        a_val, b_val = nodes[gate.a].value, nodes[gate.b].value
+        delta_out = gate.error
+
+        # local derivatives
+        df_da = grad(inference_function, argnums=0)(a_val, b_val, gate.p)
+        df_db = grad(inference_function, argnums=1)(a_val, b_val, gate.p)
+        df_dp = grad(inference_function, argnums=2)(a_val, b_val, gate.p)
+
+        # propagate error backwards
+        nodes[gate.a].error += delta_out * df_da * LEARNING_RATE
+        nodes[gate.b].error += delta_out * df_db * LEARNING_RATE
+
+        # parameter gradient for Adam
+        nabla = delta_out * df_dp * LEARNING_RATE
+        gate.update_momentum(nabla)
+
+        # reset error
+        gate.error = 0
 
 def main():
     NETWORK_SIZE = map(int, input().strip().split())
@@ -93,12 +132,31 @@ def main():
     for _ in range (INPUT_SIZE+1, NETWORK_SIZE):
         nodes.append(Gate(map(int, input().strip().split())))
 
+
+    OUTPUT_NODES = []
+    # assumed to be the last N
+    number_outputs = int(input.strip().split())
+    for _ in range (NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1):
+        OUTPUT_NODES.append(int(input().strip()))
+
     
     # Start training routine
     for i in range (0, EPOCH_COUNT):
-        inference()
+        BETA1_TIMESTAMP *= BETA1
+        BETA2_TIMESTAMP *= BETA2
 
-        backpropagate()
+        #read data
+        with open(INPUT_NAME, 'r') as file:
+            #read training input
+            line = map(int, file.readline().strip().split())
+            for i in range (1, INPUT_SIZE+1):
+                nodes[i].value = line[i-1]
+            inference()
+
+            #read result
+            answer = int(file.readline().strip())
+            backpropagate(answer)
+            
         print("Epoch " + str(i+1))
 
 
