@@ -10,6 +10,8 @@ int main() {
 
     int N = (1 << 10) * 10;
 
+    std::cout << N * 2 - 10 << "\n";
+
     int minimum = 28 * 28;
     int maximum = 28 * 28;
 
