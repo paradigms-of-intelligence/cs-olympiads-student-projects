@@ -1,0 +1,10 @@
+colorama==0.4.6
+coloredlogs==15.0.1
+humanfriendly==10.0
+jax==0.7.0
+jaxlib==0.7.0
+logging==0.4.9.6
+ml_dtypes==0.5.3
+numpy==2.3.2
+opt_einsum==3.4.0
+scipy==1.16.1

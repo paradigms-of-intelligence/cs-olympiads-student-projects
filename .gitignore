@@ -8,5 +8,6 @@
 *.out
 *.txt
 *.gch
+!requirements.txt
 
 */CMakeFiles/
