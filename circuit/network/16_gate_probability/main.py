@@ -3,13 +3,13 @@ import jax.numpy as jnp
 from jax import grad
 import math
 
-NETWORK_SIZE = 0 
+global NETWOK_SIZE
+NETWORK_SIZE = 0  # Number of gates in the network
 OUTPUT_NODES = []
-nodes = 0    #Gates
+nodes = []   #Gates
 
 EPOCH_COUNT = 2
 INPUT_SIZE = 784
-INPUT_NAME = "../"
 TEST_CASE_COUNT = 10
 
 # TODO: Simplyfy This all. With the Idea of the 4 bools instead of the Gates.
@@ -32,7 +32,7 @@ class Gate:
     m = [0 for _ in range (0, 16)]
     error = 0
 
-    def __init__(self, a, b) -> None:
+    def __init__(self, a : int, b : int) -> None:
         self.a = a
         self.b = b
 
@@ -64,7 +64,6 @@ def softmax(x):
 def inference_function(a: float, b: float, p):
     pr = a*b
     #SUUUUUUUUUUUUUUUS
-    softmax(p)
     f = []
     f[0] = 0 
     p = softmax(p)
@@ -100,7 +99,7 @@ def activation(node: Gate):
 
 def inference():
     # feedforward
-        # ...
+    # ...
     # must be toposorted
     for i in range (INPUT_SIZE+1, NETWORK_SIZE):
         Gate = nodes[i]
@@ -138,20 +137,21 @@ def backpropagate(answer):
         gate.error = 0
 
 def main():
-    NETWORK_SIZE = int(input().strip())
-    nodes = []
-    # Store input values
-    for _ in range (0, INPUT_SIZE+1):
-        nodes.append(Gate(-1,-1))
+    with open("network_architecture.txt", 'r') as file:
+        NETWORK_SIZE = int(file.readline().strip())
+        nodes = []
+        # Store input values
+        for _ in range (0, INPUT_SIZE+1):
+            nodes.append(Gate(-1,-1))
 
-    # Read network architecture
-    for _ in range (INPUT_SIZE, NETWORK_SIZE):
-        a,b = map(int, input().strip().split())
-        nodes.append(Gate(a,b))
+        # Read network architecture
+        for _ in range (INPUT_SIZE, NETWORK_SIZE):
+            a,b = map(int, file.readline().strip().split())
+            nodes.append(Gate(a,b))
 
-    # assumed to be the last N
-    number_outputs = int(input().strip())
-    OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
+        # assumed to be the last N
+        number_outputs = int(file.readline().strip())
+        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
 
     BETA1_TIMESTAMP = 1
     BETA2_TIMESTAMP = 1
@@ -162,7 +162,7 @@ def main():
 
         #read data
         for test_case in range(0, TEST_CASE_COUNT):
-            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
+            with open("../../data/training/img_" + str(test_case) + ".txt", 'r') as file:
 
                 #read training input
                 line = list(file.readline().strip())
@@ -179,7 +179,7 @@ def main():
         print("Epoch " + str(epoch+1))
     
     # Print the network
-    with open("./trained_network.bin", "wb") as f:
+    with open("trained_network.bin", "wb") as f:
         # Network size -> 32 bits/ 4 bytes
         f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
 
