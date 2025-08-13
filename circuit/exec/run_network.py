@@ -1,5 +1,5 @@
 import os
-import coloredlogs, logging, colorama
+import coloredlogs, logging
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def main():
 
     # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main.py < ./network_architecture.txt") #prints a trained_network.bin
+    os.system("python3 ../network/main.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # Converter
