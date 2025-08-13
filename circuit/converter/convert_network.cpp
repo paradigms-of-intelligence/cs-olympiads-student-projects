@@ -2,6 +2,8 @@
 #include<vector>
 #include<map>
 #include<queue>
+#include <iostream>
+#include <filesystem>
 #include "../circuit.h"
 
 #ifndef INT32_MAX
@@ -235,22 +237,25 @@ int main(int argc, char const *argv[]) {
     std::ifstream t16_ifstream(NETWORK16_FILE_NAME, std::ios::binary | std::ios::in);
     std::ofstream t2_ofstream(NETWORK2_FILE_NAME, std::ios::binary | std::ios::out);
 
+
     node_count = read_int32_t(t16_ifstream);
+    fprintf(stderr, "nodecount: %d\n", node_count);
 
     first_output_id = INPUT_NODES + node_count - 10 + 1; 
     next_free_node = INPUT_NODES + node_count + 1;
 
-    for(size_t i = 0; i < node_count; ++i)
+    for(size_t i = 0; i < node_count-INPUT_NODES; ++i)
     {       
-
         int32_t node_value[4];
         node_value[0] = read_int32_t(t16_ifstream);
         node_value[1] = read_int32_t(t16_ifstream);
         node_value[2] = read_int32_t(t16_ifstream);
         node_value[3] = read_int32_t(t16_ifstream);
-
+        // fprintf(stderr, "Read %d\n", i);
         if(node_value[0] > 16 || node_value[0] < 0
          || node_value[1] <= INPUT_NODES){
+            //fprintf(stderr, "Broke at %d\n", i);
+            //fprintf(stderr, "Just read %d %d %d %d\n", node_value[0],node_value[1],node_value[2],node_value[3]);
             program_abort(EXIT_INVALID_NODE_DATA);
         }
 
@@ -270,6 +275,10 @@ int main(int argc, char const *argv[]) {
         write_int32_t(t2_ofstream, final_nodes[i].id);
         write_int32_t(t2_ofstream, final_nodes[i].link_a);
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
+    }
+
+    for (size_t i = 0; i < 10; i++) {
+        write_int32_t(t2_ofstream, final_nodes[final_node_count-10+i].id);
     }
 
     t16_ifstream.close();

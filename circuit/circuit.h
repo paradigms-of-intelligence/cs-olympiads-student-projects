@@ -10,7 +10,7 @@ using std::string;
 extern const char* NETWORK2_FILE_NAME;
 extern const char* NETWORK16_FILE_NAME;
 extern const char* BASE_INPUT_FILE;
-constexpr int INPUT_NODES = 784;
+constexpr size_t INPUT_NODES = 784;
 constexpr int32_t ALWAYS_TRUE = 2147483647;
 constexpr int32_t ALWAYS_FALSE = 2147483646;
 

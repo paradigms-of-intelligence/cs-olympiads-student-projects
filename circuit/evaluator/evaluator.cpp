@@ -10,11 +10,11 @@ struct AndNot_network {
 
     void init() {
         // initialize current network
-        ifstream graphinput(NETWORK2_FILE_NAME, ios::binary);
+        ifstream graphinput(NETWORK2_FILE_NAME, ios::binary | ios::in);
         N = read_int32_t(graphinput)+1;
         value.resize(N); C_1.resize(N); C_2.resize(N);
 
-        for (int i = 0; i < N; i++) {
+        for (int i = 1; i < N-INPUT_NODES; i++) {
             int id = read_int32_t(graphinput);
             C_1[id] = read_int32_t(graphinput);
             C_2[id] = read_int32_t(graphinput);

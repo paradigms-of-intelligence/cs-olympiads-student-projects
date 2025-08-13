@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/andrea/Documents/Progetti/cs-olympiads-student-projects/circuit/converter/cmake_install.cmake",
+		"/home/andrea/Documents/Progetti/cs-olympiads-student-projects/circuit/converter/converter/cmake_install.cmake",
+		"/home/andrea/Documents/Progetti/cs-olympiads-student-projects/circuit/converter/evaluator/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

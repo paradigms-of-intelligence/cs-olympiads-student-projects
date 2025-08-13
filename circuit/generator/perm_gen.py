@@ -9,7 +9,10 @@ for i in range (0, LAYER_NUMBER):
     tp = [k for k in range (i*INPUT_NODES+1, (i+1)*INPUT_NODES+1)]
     shuffle(tp)
     for x in tp:
-        print(x, randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES+1))
+        aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES+1)
+        while (aus == x):
+            aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES+1)
+        print(x, aus)
         COUNTER += 1
     
 last = [k for k in range (LAYER_NUMBER*INPUT_NODES+1, (LAYER_NUMBER+1)*INPUT_NODES+1)]
@@ -21,3 +24,5 @@ while (len(last)/2 > 10):
         COUNTER += 1
         nl.append(COUNTER)
     last = nl
+
+print("10")

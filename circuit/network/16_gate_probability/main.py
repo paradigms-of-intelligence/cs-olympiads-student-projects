@@ -3,13 +3,14 @@ import jax.numpy as jnp
 from jax import grad
 import math
 
-global NETWORK_SIZE 
-global OUTPUT_NODES
-global nodes            #Gate
+NETWORK_SIZE = 0 
+OUTPUT_NODES = []
+nodes = 0            #Gate
 
 EPOCH_COUNT = 10
 INPUT_SIZE = 784
 INPUT_NAME = "../"
+TEST_CASE_COUNT = 10000
 
 # TODO: Simplyfy This all. With the Idea of the 4 bools instead of the Gates.
 ALPHA = 0.001
@@ -20,8 +21,8 @@ LEARNING_RATE = 0.01
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
-BETA1_TIMESTAMP = 1
-BETA2_TIMESTAMP = 1
+BETA1_TIMESTAMP = 0
+BETA2_TIMESTAMP = 0
 
 class Gate:
     p = [random.gauss() for _ in range (0, 16)]
@@ -112,7 +113,7 @@ def backpropagate(answer):
     # TODO: de-sus this: de-marago this
     nabla = [[0 for _ in range (0,16)] for _ in range (0, NETWORK_SIZE)]
 
-    for i in range (0, OUTPUT_NODES.size()):
+    for i in range (0, len(OUTPUT_NODES)):
         if (i//(OUTPUT_NODES/10) == answer): nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
         else: nodes[OUTPUT_NODES[i]].error = pow((nodes[OUTPUT_NODES[i]].error), 2)
 
@@ -138,42 +139,64 @@ def backpropagate(answer):
         gate.error = 0
 
 def main():
-    NETWORK_SIZE = map(int, input().strip().split())
-
+    NETWORK_SIZE = int(input().strip())
+    nodes = []
     # Store input values
     for _ in range (0, INPUT_SIZE+1):
         nodes.append(Gate(-1,-1))
 
     # Read network architecture
-    for _ in range (INPUT_SIZE+1, NETWORK_SIZE):
-        nodes.append(Gate(map(int, input().strip().split())))
+    for _ in range (INPUT_SIZE, NETWORK_SIZE):
+        a,b = map(int, input().strip().split())
+        nodes.append(Gate(a,b))
 
-
-    OUTPUT_NODES = []
     # assumed to be the last N
-    number_outputs = int(input.strip().split())
-    for _ in range (NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1):
-        OUTPUT_NODES.append(int(input().strip()))
+    number_outputs = int(input().strip())
+    OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
 
-    
+    BETA1_TIMESTAMP = 1
+    BETA2_TIMESTAMP = 1
     # Start training routine
-    for i in range (0, EPOCH_COUNT):
+    for epoch in range (0, EPOCH_COUNT):
         BETA1_TIMESTAMP *= BETA1
         BETA2_TIMESTAMP *= BETA2
 
         #read data
-        with open(INPUT_NAME, 'r') as file:
-            #read training input
-            line = map(int, file.readline().strip().split())
-            for i in range (1, INPUT_SIZE+1):
-                nodes[i].value = line[i-1]
-            inference()
+        for test_case in range(0, TEST_CASE_COUNT):
+            with open("../../data/training/img_" + str(test_case) + ".txt", 'r') as file:
 
-            #read result
-            answer = int(file.readline().strip())
-            backpropagate(answer)
+                #read training input
+                line = list(file.readline().strip())
+                map(int, line)
+
+                for i in range (1, INPUT_SIZE+1):
+                    nodes[i].value = line[i-1]
+                inference()
+
+                #read result
+                answer = int(file.readline().strip())
+                backpropagate(answer)
             
-        print("Epoch " + str(i+1))
+        print("Epoch " + str(epoch+1))
+    
+    # Print the network
+    with open("trained_network.bin", "wb") as f:
+        # Network size -> 32 bits/ 4 bytes
+        f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
+
+        for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
+            f.write(int(nodes[id].p.index(max(nodes[id].p))).to_bytes(4, byteorder = 'little', signed=True))
+            f.write(id.to_bytes(4, byteorder='little', signed=True))
+            f.write(int(nodes[id].a).to_bytes(4, byteorder='little', signed=True))
+            f.write(int(nodes[id].b).to_bytes(4, byteorder='little', signed=True))
+
+            if (id < 786): print("Debug: id is " + str(id) + "  £  gate type is "+ str(int(nodes[id].p.index(max(nodes[id].p)))))
+
+        for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
+            f.write(id.to_bytes(4, byteorder='little', signed=True))
+
+
+
 
 
 

@@ -1,15 +1,41 @@
 #include <bits/stdc++.h>
 #include "circuit.h"
 
-const char* NETWORK2_FILE_NAME = "network.bin";
-const char* NETWORK16_FILE_NAME = "16_type_network.bin";
+const char* NETWORK2_FILE_NAME = "../converter/network.bin";
+const char* NETWORK16_FILE_NAME = "../network/16_gate_probability/trained_network.bin";
 const char* BASE_INPUT_FILE = "./testdata/decompled/img_";
 
 int32_t read_int32_t(std::ifstream &in) {
     int32_t result = 0;
     in.read(reinterpret_cast<char*>(&result), 4);
+    if(in.fail()) { 
 
-    if(in.fail()) program_abort(EXIT_FILE_ERROR);
+        std::ios_base::iostate state = in.rdstate();
+
+        // Check for specific error bits
+        if (state & std::ios_base::eofbit)
+        {
+            std::cout << "End of file reached." << std::endl;
+        }
+        if (state & std::ios_base::failbit)
+        {
+            std::cout << "Non-fatal I/O error occurred." << std::endl;
+        }
+        if (state & std::ios_base::badbit)
+        {
+            std::cout << "Fatal I/O error occurred." << std::endl;
+        }
+
+        // Print system error message
+        std::perror("Error: ");
+
+        fprintf(stderr, "%s\n", strerror(errno));
+        fprintf(stderr, "\n");
+        fprintf(stderr, "file bad? %d\n", in.bad());
+
+        program_abort(EXIT_FILE_ERROR);
+    
+    }
     return result;
 }
 
