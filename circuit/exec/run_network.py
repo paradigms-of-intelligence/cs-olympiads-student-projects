@@ -15,17 +15,17 @@ def main():
     )
 
     
-    # Generator
+    # # Generator
     logger.debug("Generating a network architecture")
     os.system("python3 ../generator/perm_gen.py > ./network_architecture.txt")
     logger.debug("Generated")
 
-    # Network
+    # # Network
     logger.debug("Setup the network gates")
     os.system("python3 ../network/main.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
-    # Converter
+    # # Converter
     logger.debug("Converting network to and-not")
     os.system("g++ ../converter/convert_network.cpp ../circuit.h ../circuit.cpp  -Wall -Wextra -std=gnu++17 -static -o convert_network")
     os.system("./convert_network trained_network.bin 2gate_trained_network.bin")  

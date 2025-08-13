@@ -14,7 +14,7 @@ struct AndNot_network {
         N = read_int32_t(graphinput);
         value.resize(N+1); C_1.resize(N+1); C_2.resize(N+1);
 
-        for (int i = 1; i <= (int)(N-INPUT_NODES); i++) {
+        for (int i = INPUT_NODES+1; i <= (int)N; i++) {
             int id = read_int32_t(graphinput);
             C_1[id] = read_int32_t(graphinput);
             C_2[id] = read_int32_t(graphinput);
@@ -22,6 +22,7 @@ struct AndNot_network {
 
         result_nodes.resize(10);
         for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
+        cout << "Output\n"; 
 
 
         graphinput.close();

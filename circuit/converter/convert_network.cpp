@@ -83,6 +83,7 @@ void toposort_nodes() {
     }
     
     size_t processed_count = 0;
+
     while(!process_queue.empty()) { 
         int32_t node_id = process_queue.front();
         process_queue.pop();
@@ -97,9 +98,11 @@ void toposort_nodes() {
         }
     }
 }       
-
+size_t normal = 0;
+int nodedd_count = 0;
 void replace_gates() {
-    // not including input nodes
+    // not including input nodes7
+
     for(size_t i = 0; i < toposorted_nodes.size(); i++) {
         std::vector<Node> new_nodes;
 
@@ -152,6 +155,7 @@ void replace_gates() {
 
             case 7: // OR
             {
+
                 int32_t nand_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, -__input_a, -__input_b));
 
@@ -161,6 +165,7 @@ void replace_gates() {
 
             case 8: // NOR
             {
+
                 int32_t t_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, -__input_a, -__input_b));
 
@@ -170,6 +175,7 @@ void replace_gates() {
 
             case 9: // XNOR
             {
+
                 int32_t clean_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, __input_b));
 
@@ -186,6 +192,7 @@ void replace_gates() {
 
             case 11: // A OR !B
             {
+
                 int32_t nand_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, -__input_a, __input_b));
 
@@ -199,6 +206,7 @@ void replace_gates() {
 
             case 13: // B OR !A
             {
+
                 int32_t nand_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, -__input_b));
 
@@ -208,6 +216,7 @@ void replace_gates() {
 
             case 14: // NAND
             {
+
                 int32_t and_node = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, __input_b));
 
@@ -224,6 +233,7 @@ void replace_gates() {
                 break;
         }
 
+        
         if(new_nodes.empty() && new_nodes.back().id == toposorted_nodes[i].id)
             program_abort(EXIT_CONVERSION_ERROR);
 
@@ -231,6 +241,7 @@ void replace_gates() {
         {
             final_nodes.push_back(new_nodes[i]);
         }
+
     }
 }
 
@@ -246,8 +257,8 @@ int main(int argc, char const *argv[]) {
 
     node_count = read_int32_t(t16_ifstream);
 
-    first_output_id = INPUT_NODES + node_count - 10 + 1; 
-    next_free_node = INPUT_NODES + node_count + 1;
+    first_output_id = node_count - 10 + 1; 
+    next_free_node = node_count + 1;
 
     for(size_t i = 0; i < node_count-INPUT_NODES; ++i)
     {       
@@ -274,7 +285,8 @@ int main(int argc, char const *argv[]) {
     //Writing sequence
     int32_t final_node_count = (int32_t)final_nodes.size() + INPUT_NODES;
 
-    write_int32_t(t2_ofstream, final_node_count);
+    // std::cerr << final_node_count << " " << final_nodes.size() << " " << next_free_node << "\n";
+    write_int32_t(t2_ofstream, next_free_node-1);
 
     for(size_t i = 0; i < final_nodes.size(); i++) {
         write_int32_t(t2_ofstream, final_nodes[i].id);
