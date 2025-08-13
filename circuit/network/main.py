@@ -1,9 +1,10 @@
 import random
 import jax.numpy as jnp
-from jax import grad
+from jax import grad, jit
 import math
+import functools
 
-global NETWOK_SIZE
+global NETWORK_SIZE
 NETWORK_SIZE = 0  # Number of gates in the network
 OUTPUT_NODES = []
 nodes = []   #Gates
@@ -25,11 +26,11 @@ BETA1_TIMESTAMP = 0
 BETA2_TIMESTAMP = 0
 
 class Gate:
-    p = [random.uniform(0, 1) for _ in range (0, 16)]
+    p = jnp.array([random.uniform(0, 1) for _ in range(0, 16)])  # Parameters for the gate
     value = 0
     
-    v = [0 for _ in range (0, 16)]
-    m = [0 for _ in range (0, 16)]
+    v = jnp.array([0 for _ in range (0, 16)])
+    m = jnp.array([0 for _ in range (0, 16)])
     error = 0
 
     def __init__(self, a : int, b : int) -> None:
@@ -37,16 +38,23 @@ class Gate:
         self.b = b
 
     def update_momentum(self, nabla):
+        #self.m = self.m*BETA1 + (1)
         for i in range (0, 16):
-            self.m[i] = BETA1 * self.m[i] + (1-BETA1) * nabla
-            self.v[i] = BETA2 * self.v[i] + (1-BETA2) * nabla * nabla
-            i_m = self.m[i]/(1-BETA1_TIMESTAMP)
-            i_v = self.v[i]/(1-BETA2_TIMESTAMP)
-            self.p[i] = self.p[i] - ALPHA * i_m[i] / (math.sqrt(i_v[i]) + EPSILON)
+            m_i = self.m.at[i].get()
+            m_i = BETA1 * m_i + (1 - BETA1) * nabla.at[i].get()
+            self.m.at[i].set(m_i)
+
+            v_i = self.v.at[i].get()
+            v_i = BETA2 * v_i + (1 - BETA2) * pow(nabla.at[i].get(), 2)
+            self.v.at[i].set(v_i)
+            
+            i_m = self.m.at[i].get()/(1-BETA1_TIMESTAMP)
+            i_v = (self.v.at[i].get())/(1-BETA2_TIMESTAMP)
+            self.p.at[i].set(self.p[i] - ALPHA * i_m / (math.sqrt(i_v) + EPSILON))
         
         # propagate_backward
-        nodes[self.a].error += error
-        nodes[self.b].error += error
+        nodes[self.a].error += self.error
+        nodes[self.b].error += self.error
         # reset error
         error = 0
         
@@ -64,8 +72,6 @@ def softmax(x):
 def inference_function(a: float, b: float, p):
     pr = a*b
     #SUUUUUUUUUUUUUUUS
-    f = []
-    f[0] = 0 
     p = softmax(p)
 
     f = [0 for _ in range (0, 16)]
@@ -93,11 +99,14 @@ def inference_function(a: float, b: float, p):
     return sum
 
 def activation(node: Gate):
-    v1, v2 = nodes[Gate.a].v, nodes[Gate.b].v
-    Gate.v = function(v1, v2, Gate.p)    
+    global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE
+    v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
+    Gate.value = function(v1, v2, Gate.p)    
     pass
 
+@jit
 def inference():
+    global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE
     # feedforward
     # ...
     # must be toposorted
@@ -106,13 +115,16 @@ def inference():
         v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
         Gate.value = inference_function(v1, v2, Gate.p)
 
+@functools.partial(jit, static_argnames=["answer"])
 def backpropagate(answer):
+    global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE, LEARNING_RATE
     # backpropagate through every node
     # TODO: de-sus this: de-marago this
     nabla = [[0 for _ in range (0,16)] for _ in range (0, NETWORK_SIZE)]
 
+    # evaluating cost function
     for i in range (0, len(OUTPUT_NODES)):
-        if (i//(OUTPUT_NODES/10) == answer): nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
+        if (i//(len(OUTPUT_NODES)/10) == answer): nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
         else: nodes[OUTPUT_NODES[i]].error = pow((nodes[OUTPUT_NODES[i]].error), 2)
 
     for i in range (NETWORK_SIZE, INPUT_SIZE, -1):
@@ -138,6 +150,7 @@ def backpropagate(answer):
 
 def main():
     with open("network_architecture.txt", 'r') as file:
+        global NETWORK_SIZE, INPUT_SIZE, OUTPUT_NODES, nodes, EPOCH_COUNT
         NETWORK_SIZE = int(file.readline().strip())
         nodes = []
         # Store input values
@@ -165,8 +178,7 @@ def main():
             with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
 
                 #read training input
-                line = list(file.readline().strip())
-                map(int, line)
+                line = list(map(float, file.readline().strip()))
 
                 for i in range (1, INPUT_SIZE+1):
                     nodes[i].value = line[i-1]
