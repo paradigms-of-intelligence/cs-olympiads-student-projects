@@ -99,6 +99,7 @@ void toposort_nodes() {
 }       
 
 void replace_gates() {
+    // not including input nodes
     for(size_t i = 0; i < toposorted_nodes.size(); i++) {
         std::vector<Node> new_nodes;
 
@@ -234,12 +235,16 @@ void replace_gates() {
 }
 
 int main(int argc, char const *argv[]) {
-    std::ifstream t16_ifstream(NETWORK16_FILE_NAME, std::ios::binary | std::ios::in);
-    std::ofstream t2_ofstream(NETWORK2_FILE_NAME, std::ios::binary | std::ios::out);
 
+    if(argc != 3) program_abort(EXIT_WRONG_USAGE);
+
+    std::ifstream t16_ifstream(argv[1], std::ios::binary | std::ios::in);
+    std::ofstream t2_ofstream(argv[2], std::ios::binary | std::ios::out);
+
+    if(!t16_ifstream.is_open() || !t2_ofstream.is_open()) 
+        program_abort(EXIT_FILE_ERROR);
 
     node_count = read_int32_t(t16_ifstream);
-    fprintf(stderr, "nodecount: %d\n", node_count);
 
     first_output_id = INPUT_NODES + node_count - 10 + 1; 
     next_free_node = INPUT_NODES + node_count + 1;
@@ -271,14 +276,14 @@ int main(int argc, char const *argv[]) {
 
     write_int32_t(t2_ofstream, final_node_count);
 
-    for(size_t i = 0; i < final_node_count; i++) {
+    for(size_t i = 0; i < final_nodes.size(); i++) {
         write_int32_t(t2_ofstream, final_nodes[i].id);
         write_int32_t(t2_ofstream, final_nodes[i].link_a);
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
     }
 
-    for (size_t i = 0; i < 10; i++) {
-        write_int32_t(t2_ofstream, final_nodes[final_node_count-10+i].id);
+    for (size_t i = first_output_id; i < first_output_id+10; i++) {
+        write_int32_t(t2_ofstream, i);
     }
 
     t16_ifstream.close();

@@ -5,12 +5,12 @@ import math
 
 NETWORK_SIZE = 0 
 OUTPUT_NODES = []
-nodes = 0            #Gate
+nodes = 0    #Gates
 
-EPOCH_COUNT = 10
+EPOCH_COUNT = 2
 INPUT_SIZE = 784
 INPUT_NAME = "../"
-TEST_CASE_COUNT = 10000
+TEST_CASE_COUNT = 10
 
 # TODO: Simplyfy This all. With the Idea of the 4 bools instead of the Gates.
 ALPHA = 0.001
@@ -25,7 +25,7 @@ BETA1_TIMESTAMP = 0
 BETA2_TIMESTAMP = 0
 
 class Gate:
-    p = [random.gauss() for _ in range (0, 16)]
+    p = [random.uniform(0, 1) for _ in range (0, 16)]
     value = 0
     
     v = [0 for _ in range (0, 16)]
@@ -98,7 +98,6 @@ def activation(node: Gate):
     Gate.v = function(v1, v2, Gate.p)    
     pass
 
-
 def inference():
     # feedforward
         # ...
@@ -163,7 +162,7 @@ def main():
 
         #read data
         for test_case in range(0, TEST_CASE_COUNT):
-            with open("../../data/training/img_" + str(test_case) + ".txt", 'r') as file:
+            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
 
                 #read training input
                 line = list(file.readline().strip())
@@ -172,7 +171,7 @@ def main():
                 for i in range (1, INPUT_SIZE+1):
                     nodes[i].value = line[i-1]
                 inference()
-
+                
                 #read result
                 answer = int(file.readline().strip())
                 backpropagate(answer)
@@ -180,7 +179,7 @@ def main():
         print("Epoch " + str(epoch+1))
     
     # Print the network
-    with open("trained_network.bin", "wb") as f:
+    with open("./trained_network.bin", "wb") as f:
         # Network size -> 32 bits/ 4 bytes
         f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
 
@@ -190,15 +189,10 @@ def main():
             f.write(int(nodes[id].a).to_bytes(4, byteorder='little', signed=True))
             f.write(int(nodes[id].b).to_bytes(4, byteorder='little', signed=True))
 
-            if (id < 786): print("Debug: id is " + str(id) + "  £  gate type is "+ str(int(nodes[id].p.index(max(nodes[id].p)))))
+            #if (id < 786): print("Debug: id is " + str(id) + "  £  gate type is "+ str(int(nodes[id].p.index(max(nodes[id].p)))))
 
         for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
             f.write(id.to_bytes(4, byteorder='little', signed=True))
-
-
-
-
-
 
 if __name__ == "__main__":
     main()

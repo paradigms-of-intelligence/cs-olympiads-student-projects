@@ -1,8 +1,12 @@
 */build/
 .*/
 
+
 .clangd
 
 *.bin
 *.out
 *.txt
+*.gch
+
+*/CMakeFiles/

@@ -3,7 +3,6 @@
 
 const char* NETWORK2_FILE_NAME = "../converter/network.bin";
 const char* NETWORK16_FILE_NAME = "../network/16_gate_probability/trained_network.bin";
-const char* BASE_INPUT_FILE = "./testdata/decompled/img_";
 
 int32_t read_int32_t(std::ifstream &in) {
     int32_t result = 0;

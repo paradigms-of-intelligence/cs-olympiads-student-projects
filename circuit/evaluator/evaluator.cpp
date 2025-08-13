@@ -22,6 +22,8 @@ struct AndNot_network {
 
         result_nodes.resize(10);
         for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
+
+
         graphinput.close();
     }
 
@@ -52,23 +54,26 @@ struct AndNot_network {
         int g = -1;
 
         for (int counter = 0; counter < 10; counter++) {
-            if (value[result_nodes[counter]]) {
-                assert(g == -1); //the network returned more than 1 guess
+            if (value[result_nodes[counter]-INPUT_NODES]) {
+                if(g != -1) return -1;
                 g = counter;
             }
         }
 
-        assert(g != -1); // the network didn't guess
         return g;
     }
 };
 
-bool make_test(int n, AndNot_network &net) {
+bool make_test(int n, AndNot_network &net, const char* directory) {
     // 1 if test correct, 0 if not
     //to fix, variable `n` is useless
-    ifstream current_input(BASE_INPUT_FILE);
-    vector<bool> input_values;
+    string path = directory;
+    path += "img_" + to_string(n) + ".txt";
+    ifstream current_input(path, ios::in);
+    
+    vector<bool> input_values(INPUT_NODES);
     string input_image;
+
     getline(current_input, input_image);
 
     for (int i = 0; i < INPUT_NODES; i++) {
@@ -76,15 +81,22 @@ bool make_test(int n, AndNot_network &net) {
     }
 
     net.input_into(input_values);
+
     net.calculatenetwork();
 
     //get the correct result and compare
     string correct;
     getline(current_input, correct);
-    return correct[0] == ('0'+net.guess());
+
+    int gs = net.guess();
+    return correct[0] == ('0'+gs);
 }   
 
-int main() {
+int main(int argc, char const *argv[]) {
+
+    if(argc != 2) 
+        program_abort(-1);
+
     // create the network structure
     AndNot_network net;
     net.init();
@@ -92,7 +104,8 @@ int main() {
     // test on the test data
     float num = 0;
     for (int i = 0; i < TESTS; i++) {
-        if (make_test(i, net)) num++;
+        if (make_test(i, net, argv[1])) num++;
     }
+
     cout << num/(float)TESTS << endl;
 }
