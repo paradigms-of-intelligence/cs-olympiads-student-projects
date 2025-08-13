@@ -89,7 +89,7 @@ void toposort_nodes() {
 
         processed_count++;
 
-        if(node_id > INPUT_NODES) toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        if(node_id > (int32_t)INPUT_NODES) toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
 
         for(int32_t edge : reverse_link[node_id])
         {
@@ -258,7 +258,7 @@ int main(int argc, char const *argv[]) {
         node_value[3] = read_int32_t(t16_ifstream);
         // fprintf(stderr, "Read %d\n", i);
         if(node_value[0] > 16 || node_value[0] < 0
-         || node_value[1] <= INPUT_NODES){
+         || node_value[1] <=(int32_t) INPUT_NODES){
             //fprintf(stderr, "Broke at %d\n", i);
             //fprintf(stderr, "Just read %d %d %d %d\n", node_value[0],node_value[1],node_value[2],node_value[3]);
             program_abort(EXIT_INVALID_NODE_DATA);
@@ -282,7 +282,7 @@ int main(int argc, char const *argv[]) {
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
     }
 
-    for (size_t i = first_output_id; i < first_output_id+10; i++) {
+    for (int32_t i = first_output_id; i < first_output_id+10; i++) {
         write_int32_t(t2_ofstream, i);
     }
 

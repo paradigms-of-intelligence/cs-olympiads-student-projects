@@ -8,13 +8,13 @@ struct AndNot_network {
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
 
-    void init() {
+    void init(const char* path) {
         // initialize current network
-        ifstream graphinput(NETWORK2_FILE_NAME, ios::binary | ios::in);
+        ifstream graphinput(path, ios::binary | ios::in);
         N = read_int32_t(graphinput)+1;
         value.resize(N); C_1.resize(N); C_2.resize(N);
 
-        for (int i = 1; i < N-INPUT_NODES; i++) {
+        for (int i = 1; i < (int)(N-INPUT_NODES); i++) {
             int id = read_int32_t(graphinput);
             C_1[id] = read_int32_t(graphinput);
             C_2[id] = read_int32_t(graphinput);
@@ -28,7 +28,7 @@ struct AndNot_network {
     }
 
     void input_into(vector<bool> &in) {
-        for (int i = 1; i <= INPUT_NODES; i++) value[i] = in[i-1];
+        for (int i = 1; i <= (int)INPUT_NODES; i++) value[i] = in[i-1];
     }
 
     void calculatenetwork() {
@@ -69,14 +69,14 @@ bool make_test(int n, AndNot_network &net, const char* directory) {
     //to fix, variable `n` is useless
     string path = directory;
     path += "img_" + to_string(n) + ".txt";
-    ifstream current_input(path, ios::in);
     
+    ifstream current_input(path, ios::in);
     vector<bool> input_values(INPUT_NODES);
     string input_image;
 
     getline(current_input, input_image);
 
-    for (int i = 0; i < INPUT_NODES; i++) {
+    for (int i = 0; i < (int)INPUT_NODES; i++) {
         input_values[i] = (input_image[i] == '1');
     }
 
@@ -94,12 +94,12 @@ bool make_test(int n, AndNot_network &net, const char* directory) {
 
 int main(int argc, char const *argv[]) {
 
-    if(argc != 2) 
+    if(argc != 3) 
         program_abort(-1);
 
     // create the network structure
     AndNot_network net;
-    net.init();
+    net.init(argv[2]);
 
     // test on the test data
     float num = 0;
