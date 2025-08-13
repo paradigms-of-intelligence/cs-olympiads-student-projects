@@ -11,9 +11,9 @@ LEFT_NODES = []
 RIGHT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 8
+EPOCH_COUNT = 12
 INPUT_SIZE = 784
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 
 # Training constants
 ALPHA = 0.001
@@ -156,7 +156,7 @@ def main():
 
         # Write the network gates
         for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-            f.write(int(prob[id].index(max(prob[id]))).to_bytes(4, byteorder = 'little', signed=True))
+            f.write(jnp.argmax(prob[id])[0].to_bytes(4, byteorder = 'little', signed=True))
             f.write(id.to_bytes(4, byteorder='little', signed=True))
             f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
             f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
