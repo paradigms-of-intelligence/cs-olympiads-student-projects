@@ -43,7 +43,7 @@ void write_int32_t(std::ofstream &out, int32_t data) {
     if(out.fail()) program_abort(EXIT_FILE_ERROR);
 }
 
-void program_abort(size_t exit_code) {
+void program_abort(int32_t exit_code) {
     std::fprintf(stderr, "Error code: %d\n", exit_code);
     switch (exit_code) {
     case EXIT_WRONG_USAGE:

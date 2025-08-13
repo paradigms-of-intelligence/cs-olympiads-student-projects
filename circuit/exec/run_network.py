@@ -18,23 +18,25 @@ def main():
     # Generator
     logger.debug("Generating a network architecture")
     os.system("python3 ../generator/perm_gen.py > ./network_architecture.txt")
-    # log.info("Generated\n")
+    logger.debug("Generated")
 
     # Network
-    # log.info("Setup the network gates")
-    # os.system("python3 main.py < ./network_architecture.txt") #prints a trained_network.bin
-    # log.info("16-gate network set up")
+    logger.debug("Setup the network gates")
+    os.system("python3 ../network/main.py < ./network_architecture.txt") #prints a trained_network.bin
+    logger.debug("16-gate network set up")
 
     # Converter
-    # log.info("Converting network to and-not")
-    # os.system("g++ ../converter/convert_network.cpp ../circuit.cpp ../circuit.h -Wall -Wextra -std=gnu++17 -static -o convert_network")
-    # os.system("./convert_network trained_network.bin 2gate_trained_network.bin")  
-    # log.info("Finished converting")   
+    logger.debug("Converting network to and-not")
+    os.system("g++ ../converter/convert_network.cpp ../circuit.h ../circuit.cpp  -Wall -Wextra -std=gnu++17 -static -o convert_network")
+    os.system("./convert_network trained_network.bin 2gate_trained_network.bin")  
+    logger.debug("Finished converting")   
      
     # Evaluator
 
-    # os.system("g++ ../evaluator/evaluator.cpp ../circuit.cpp ../circuit.h -Wall -Wextra -std=gnu++17 -static evaluate_network")
-    # os.system("./evaluate_network 2gate_trained_network.bin")
+    logger.debug("Evaluating the network")
+    os.system("g++ ../evaluator/evaluator.cpp ../circuit.cpp ../circuit.h -Wall -Wextra -std=gnu++17 -static -o evaluate_network")
+    os.system("./evaluate_network ../data/testdata/ 2gate_trained_network.bin")
+    logger.debug("Evaluated")
  
     # Flush all logs before exiting
     logging.shutdown()
