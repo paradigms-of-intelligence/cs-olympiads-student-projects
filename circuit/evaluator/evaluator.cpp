@@ -11,10 +11,10 @@ struct AndNot_network {
     void init(const char* path) {
         // initialize current network
         ifstream graphinput(path, ios::binary | ios::in);
-        N = read_int32_t(graphinput)+1;
-        value.resize(N); C_1.resize(N); C_2.resize(N);
+        N = read_int32_t(graphinput);
+        value.resize(N+1); C_1.resize(N+1); C_2.resize(N+1);
 
-        for (int i = 1; i < (int)(N-INPUT_NODES); i++) {
+        for (int i = 1; i <= (int)(N-INPUT_NODES); i++) {
             int id = read_int32_t(graphinput);
             C_1[id] = read_int32_t(graphinput);
             C_2[id] = read_int32_t(graphinput);
@@ -31,20 +31,25 @@ struct AndNot_network {
         for (int i = 1; i <= (int)INPUT_NODES; i++) value[i] = in[i-1];
     }
 
+
+    bool getvalue(int id){
+        bool c = 0;
+        if (id < 0) {
+            assert(-id <= N);
+            c = !value[-id];
+        }
+        else if (id == ALWAYS_TRUE) c = 1;
+        else if (id == ALWAYS_FALSE) c = 0;
+        else {
+            assert( id <= N );
+            c = value[id];
+        }
+        return c;
+    }
+
     void calculatenetwork() {
         // calculate all node values
-        for (int i = INPUT_NODES+1; i < N; i++) {
-            auto getvalue = [&](int id) -> bool{
-                bool c;
-                if (id < 0) {
-                    assert(-id < N);
-                    c = !value[-id];
-                }
-                else if (id == ALWAYS_TRUE) c = 1;
-                else if (id == ALWAYS_FALSE) c = 0;
-                else c = value[id];
-                return c;
-            };
+        for (int i = INPUT_NODES+1; i <= N; i++) {
             value[i] = getvalue(C_1[i]) & getvalue(C_2[i]);
         }
     }
