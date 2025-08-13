@@ -13,7 +13,7 @@ RIGHT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 8
 INPUT_SIZE = 784
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 
 # Training constants
 ALPHA = 0.001
