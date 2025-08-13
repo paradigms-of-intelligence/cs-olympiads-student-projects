@@ -11,9 +11,9 @@ LEFT_NODES = []
 RIGHT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 2
+EPOCH_COUNT = 8
 INPUT_SIZE = 784
-BATCH_SIZE = 4
+BATCH_SIZE = 64
 
 # Training constants
 ALPHA = 0.001
@@ -54,7 +54,7 @@ def inference_function(a: float, b: float, p):
 
     return sum
 
-
+@jax.jit
 def loss_function(prob, values, correct_answer):
     # inference + evaluating cost function
     # feedforward
@@ -65,7 +65,7 @@ def loss_function(prob, values, correct_answer):
     outputs = jnp.array([values[node] for node in OUTPUT_NODES])
     return jnp.mean(jnp.square(outputs - correct_answer))
 
-
+@jax.jit
 def scalar_loss(prob, values, correct_answer):
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0)) 
     loss = batch_loss(prob, values, correct_answer)
