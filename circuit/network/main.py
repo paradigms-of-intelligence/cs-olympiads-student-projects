@@ -1,234 +1,168 @@
-import random
-import math
-import functools
-import jax
+import random 
 import jax.numpy as jnp
-from jax import jit, value_and_grad
+import jax, math, functools, optax
 
-# ---------------- Hyperparameters ----------------
-EPOCH_COUNT = 1
-INPUT_SIZE = 784
-TEST_CASE_COUNT = 3
 
-ALPHA = 0.001
-BETA2 = 0.999
-BETA1 = 0.9
-EPSILON = 1e-8
-LEARNING_RATE = 0.01
-
-# ---------------- Global state ----------------
-NETWORK_SIZE = 0  # Number of nodes (inputs + internal + outputs)
+#ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞඞඞඞඞඞඞ
+# Network constants
+NETWORK_SIZE = 0  # Number of gates in the network
 OUTPUT_NODES = []
-nodes = []   # list[Gate]
+LEFT_NODES = []
+RIGHT_NODES = []
 
-# Adam bias-correction timestamps (updated in main loop)
-BETA1_TIMESTAMP = 0.0
-BETA2_TIMESTAMP = 0.0
+# Training input parameters
+EPOCH_COUNT = 2
+INPUT_SIZE = 784
+BATCH_SIZE = 4
 
+# Training constants
+ALPHA = 0.001
+BETA2 = .999
+BETA1 = .9
+EPSILON = 1e-4
+LEARNING_RATE = 0.01
+# This should be multiplied by BETA1 and BETA2
+# and be updated for each iteration
+BETA1_TIMESTAMP = 0
+BETA2_TIMESTAMP = 0
 
-# ---------------- Model primitives ----------------
-def inference_function(a: float, b: float, p: jnp.ndarray) -> jnp.ndarray:
-    """
-    Pure JAX, vectorized features; p is softmax'd; returns scalar output.
-    """
-    p = jax.nn.softmax(p)
-    pr = a * b
-    feats = jnp.array([
-        0.0,                # 0
-        pr,                 # 1
-        a - pr,             # 2
-        a,                  # 3
-        b - pr,             # 4
-        b,                  # 5
-        a + b - 2.0 * pr,   # 6
-        a + b - pr,         # 7
-        1.0 - a - b + pr,   # 8
-        1.0 - a - b + 2.0*pr,# 9
-        1.0 - b,            # 10
-        1.0 - b + pr,       # 11
-        1.0 - a,            # 12
-        1.0 - a + pr,       # 13
-        1.0 - pr,           # 14
-        1.0                 # 15
-    ], dtype=p.dtype)
-    return jnp.dot(p, feats)
+# basic inference function for probabilities
+@jax.jit
+def inference_function(a: float, b: float, p):
+    pr = a*b
+    f = [0 for _ in range (0, 16)]
+    f[0] = 0
+    f[1] = pr*p[1]
+    f[2] = (a-pr)*p[2]
+    f[3] = a*p[3]
+    f[4] = (b-pr)*p[4]
+    f[5] = b*p[5]
+    f[6] = (a+b-2*pr)*p[6]
+    f[7] = (a+b-pr)*p[7]
+    f[8] = (1-a-b+pr)*p[8]
+    f[9] = (1-a-b+2*pr)*p[9]
+    f[10] = (1-b)*p[10]
+    f[11] = (1-b+pr)*p[11]
+    f[12] = (1-a)*p[12]
+    f[13] = (1-a+pr)*p[13]
+    f[14] = (1-pr)*p[14]
+    f[15] = p[15]
+    
+    sum = 0
+    for l in f: 
+        sum += l
 
-
-# Build once: JITted value+grads w.r.t. (a, b, p)
-inference_vg = jit(value_and_grad(inference_function, argnums=(0, 1, 2)))
-
-
-class Gate:
-    """
-    A single gate/node in the graph.
-    NOTE: Use instance attributes, not class attributes.
-    """
-    def __init__(self, a: int, b: int) -> None:
-        self.a = a
-        self.b = b
-        # Parameters and optimizer state
-        self.p = jnp.array([random.uniform(0.0, 1.0) for _ in range(16)], dtype=jnp.float32)
-        self.m = jnp.zeros_like(self.p)
-        self.v = jnp.zeros_like(self.p)
-        # Forward value and backprop error (scalars)
-        self.value = jnp.array(0.0, dtype=jnp.float32)
-        self.error = jnp.array(0.0, dtype=jnp.float32)
-
-    def update_momentum(self, nabla: jnp.ndarray, t1: float, t2: float):
-        """
-        Optim #1: fully vectorized Adam with bias correction.
-        t1, t2 are running BETA1^t and BETA2^t (pass in, do not read globals).
-        """
-        self.m = BETA1 * self.m + (1.0 - BETA1) * nabla
-        self.v = BETA2 * self.v + (1.0 - BETA2) * (nabla * nabla)
-
-        # Bias correction (avoid division by zero at t=0 by ensuring t1,t2>0 from caller)
-        m_hat = self.m / (1.0 - t1)
-        v_hat = self.v / (1.0 - t2)
-
-        self.p = self.p - ALPHA * m_hat / (jnp.sqrt(v_hat) + EPSILON)
-
-        # propagate backward to inputs (accumulate error)
-        if self.a >= 0:
-            nodes[self.a].error = nodes[self.a].error + self.error
-        if self.b >= 0:
-            nodes[self.b].error = nodes[self.b].error + self.error
-
-        # reset own error
-        self.error = jnp.array(0.0, dtype=jnp.float32)
+    return sum
 
 
-# ---------------- Inference / Backprop ----------------
-def inference():
-    """
-    Feed-forward over all non-input nodes in topological order.
-    """
-    global nodes, NETWORK_SIZE, INPUT_SIZE
-    # Nodes 0..INPUT_SIZE are inputs (assuming 1-based inputs in original; normalize here)
-    # We'll assume nodes are appended in topo order.
-    for i in range(INPUT_SIZE + 1, NETWORK_SIZE + 1):
-        g = nodes[i]
-        v1 = nodes[g.a].value if g.a >= 0 else jnp.array(0.0, dtype=jnp.float32)
-        v2 = nodes[g.b].value if g.b >= 0 else jnp.array(0.0, dtype=jnp.float32)
-        g.value = inference_function(v1, v2, g.p)
+def loss_function(prob, values, correct_answer):
+    # inference + evaluating cost function
+    # feedforward
+    for i in range(INPUT_SIZE+1,NETWORK_SIZE+1):
+        prob = prob.at[i].set(jax.nn.softmax(prob[i]))
+        values = values.at[i].set(inference_function(values[LEFT_NODES[i]], values[RIGHT_NODES[i]], prob[i]))
+
+    outputs = jnp.array([values[node] for node in OUTPUT_NODES])
+    return jnp.mean(jnp.square(outputs - correct_answer))
 
 
-def backpropagate(answer: int, t1: float, t2: float):
-    """
-    Backprop through every node.
-    Optim #2: reuse prebuilt, jit'ed value_and_grad on inference_function.
-    """
-    global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE, LEARNING_RATE
-
-    # Evaluate a simple "cost" into node.error at outputs (keeping original intent)
-    # (Original code used node.error slots for both value and error—kept structure minimal.)
-    # Here, we interpret g.value as logits-ish scalar per output; compute squared error vs one-hot.
-    K = len(OUTPUT_NODES)
-    if K > 0:
-        correct_bucket = answer  # expecting 0..9
-        # Assign errors: (target - value)^2, accumulated in .error
-        for idx, node_id in enumerate(OUTPUT_NODES):
-            target = 1.0 if (idx // max(K // 10, 1)) == correct_bucket else 0.0
-            pred = nodes[node_id].value
-            nodes[node_id].error = (target - pred) * (target - pred)
-
-    # Backward over gates (reverse topo)
-    for i in range(NETWORK_SIZE, INPUT_SIZE, -1):
-        g = nodes[i]
-        a_val = nodes[g.a].value if g.a >= 0 else jnp.array(0.0, dtype=jnp.float32)
-        b_val = nodes[g.b].value if g.b >= 0 else jnp.array(0.0, dtype=jnp.float32)
-        delta_out = g.error
-
-        # Optim #2: single jit'ed call for val and grads wrt (a, b, p)
-        val, (df_da, df_db, df_dp) = inference_vg(a_val, b_val, g.p)
-
-        # Propagate error backwards to inputs (SGD-scaled)
-        nodes[g.a].error = nodes[g.a].error + delta_out * df_da * LEARNING_RATE if g.a >= 0 else jnp.array(0.0, dtype=jnp.float32)
-        nodes[g.b].error = nodes[g.b].error + delta_out * df_db * LEARNING_RATE if g.b >= 0 else jnp.array(0.0, dtype=jnp.float32)
-
-        # Parameter gradient for Adam (SGD-scaled)
-        nabla = delta_out * df_dp * LEARNING_RATE
-
-        # Optim #1: vectorized Adam update (pass timestamps)
-        g.update_momentum(nabla, t1, t2)
-
-        # Reset this node's backprop error after use (already done in update_momentum for symmetry)
-        g.error = jnp.array(0.0, dtype=jnp.float32)
+def scalar_loss(prob, values, correct_answer):
+    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0)) 
+    loss = batch_loss(prob, values, correct_answer)
+    print(loss)
+    return jnp.mean(loss)
 
 
-# ---------------- Training driver ----------------
 def main():
-    global NETWORK_SIZE, INPUT_SIZE, OUTPUT_NODES, nodes, EPOCH_COUNT
-    global BETA1_TIMESTAMP, BETA2_TIMESTAMP
+    global BETA1_TIMESTAMP, BETA2_TIMESTAMP, BATCH_SIZE, EPSILON, LEARNING_RATE, INPUT_SIZE, OUTPUT_NODES
 
+    # Load network architecture
     with open("network_architecture.txt", 'r') as file:
+        global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, EPOCH_COUNT
+
+        # Initialize network size 
         NETWORK_SIZE = int(file.readline().strip())
 
-        nodes = []
-        # Reserve indices 0..INPUT_SIZE for inputs
-        for _ in range(0, INPUT_SIZE + 1):
-            nodes.append(Gate(-1, -1))
+        # Initialize null connections of input nodes
+        LEFT_NODES = [-1 for x in range(0, INPUT_SIZE+1)]
+        RIGHT_NODES = [-1 for x in range(0, INPUT_SIZE+1)]    
 
-        # Read network architecture for nodes INPUT_SIZE+1 .. NETWORK_SIZE
-        # (Fix off-by-one: include NETWORK_SIZE)
-        for _ in range(INPUT_SIZE + 1, NETWORK_SIZE + 1):
-            a, b = map(int, file.readline().strip().split())
-            nodes.append(Gate(a, b))
+        # Initialize all other nodes
+        for _ in range (INPUT_SIZE+1, NETWORK_SIZE+1):
+            left, right = map(int, file.readline().strip().split())
+            LEFT_NODES.append(left)
+            RIGHT_NODES.append(right)
 
-        # Read number of outputs, assume they are the last N nodes
+        # Initialize output nodes
+        # assumed to be the last N : TODO
         number_outputs = int(file.readline().strip())
-        OUTPUT_NODES = [x for x in range(NETWORK_SIZE - number_outputs + 1, NETWORK_SIZE + 1)]
+        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
 
-    # Initialize bias-correction timestamps at 1.0 (so first step uses 1 - BETA^1)
-    BETA1_TIMESTAMP = 1.0
-    BETA2_TIMESTAMP = 1.0
-
-    # Training loop
-    for epoch in range(0, EPOCH_COUNT):
+    # Initialize the network with random probabilities
+    prob = jnp.array([[random.random() for _ in range (16)] for _ in range(NETWORK_SIZE)], dtype=jnp.float16)
+    
+    BETA1_TIMESTAMP = 1
+    BETA2_TIMESTAMP = 1
+    # Start training routine
+    for epoch in range (0, EPOCH_COUNT):
+        print("Epoch " + str(epoch+1))
         # Update timestamps (these represent BETA^t)
         BETA1_TIMESTAMP *= BETA1
         BETA2_TIMESTAMP *= BETA2
 
-        for test_case in range(0, TEST_CASE_COUNT):
-            with open(f"../data/training/img_{test_case}.txt", 'r') as file:
-                print("Reading image", test_case)
+        # Initialize optimizer
+        optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1_TIMESTAMP, b2=BETA2_TIMESTAMP, eps=EPSILON)
+        opt_state = optimizer.init(prob)
 
-                # Read training input: expecting a line of digits '0'/'1' or floats without spaces
-                # Original code did: list(map(float, file.readline().strip()))
-                # Keep behavior but cast to float array via jnp.array for speed.
-                line_str = file.readline().strip()
-                line = jnp.array(list(map(float, line_str)), dtype=jnp.float32)
+        # Initialize values to 0 for the batch
+        values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float16)
+        answer = []
+        # For each image in the batch read training data
+        for test_case in range(0, BATCH_SIZE):
+            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
+                #read training input
+                line = list(map(float, file.readline().strip()))
 
-                # Load inputs into nodes[1..INPUT_SIZE]
-                for i in range(1, INPUT_SIZE + 1):
-                    nodes[i].value = line[i - 1]
+                for id in range (1, INPUT_SIZE+1):
+                    values = values.at[test_case, id].set(line[id-1])
 
-                # Forward
-                inference()
+                # Setting the correct answer
+                ans = int(file.readline().strip())
 
-                # Read label
-                answer = int(file.readline().strip())
+                answer.append([0 for _ in range(len(OUTPUT_NODES))])
+                answer[test_case][ans] = 1
+                print("Test case " + str(test_case))
+            
+        correct_answer = jnp.array(answer)
 
-                # Backward (pass current timestamps for Adam bias correction)
-                backpropagate(answer, BETA1_TIMESTAMP, BETA2_TIMESTAMP)
+        # Forward pass
+        loss_value = scalar_loss(prob, values, correct_answer)
+        print("Loss value: " + str(loss_value))
 
-        print("Epoch", epoch + 1)
+        #Backward pass
+        gradients = jax.grad(scalar_loss, argnums=0)(prob, values, correct_answer)
+        
+        # Update parameters
+        updates, opt_state = optimizer.update(gradients, opt_state)
+        prob = optax.apply_updates(prob, updates)
+        
+        
 
-    # Save the network
+
+    # Print the network
     with open("trained_network.bin", "wb") as f:
-        # Network size -> 32 bits/ 4 bytes
-        f.write(NETWORK_SIZE.to_bytes(4, byteorder='little', signed=False))
+        # Write the network size -> 32 bits/ 4 bytes
+        f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
 
-        for idx in range(INPUT_SIZE + 1, NETWORK_SIZE + 1):
-            gate = nodes[idx]
-            gate_type = int(jnp.argmax(gate.p))
-            f.write(gate_type.to_bytes(4, byteorder='little', signed=True))
-            f.write(idx.to_bytes(4, byteorder='little', signed=True))
-            f.write(int(gate.a).to_bytes(4, byteorder='little', signed=True))
-            f.write(int(gate.b).to_bytes(4, byteorder='little', signed=True))
+        # Write the network gates
+        for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
+            f.write(int(prob[id].index(max(prob[id]))).to_bytes(4, byteorder = 'little', signed=True))
+            f.write(id.to_bytes(4, byteorder='little', signed=True))
+            f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
+            f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
 
-        for idx in range(NETWORK_SIZE - 9, NETWORK_SIZE + 1):
-            f.write(idx.to_bytes(4, byteorder='little', signed=True))
+        for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
+            f.write(id.to_bytes(4, byteorder='little', signed=True))
 
 
 if __name__ == "__main__":
