@@ -162,7 +162,7 @@ def main():
 
         #read data
         for test_case in range(0, TEST_CASE_COUNT):
-            with open("../../data/training/img_" + str(test_case) + ".txt", 'r') as file:
+            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
 
                 #read training input
                 line = list(file.readline().strip())
