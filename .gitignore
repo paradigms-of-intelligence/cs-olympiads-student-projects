@@ -9,6 +9,6 @@
 *.gch
 *.exe
 .*/ 
-
+vgcore.*
 # Exceptions
 !requirements.txt

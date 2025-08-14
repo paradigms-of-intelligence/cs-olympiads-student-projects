@@ -14,7 +14,7 @@ constexpr size_t INPUT_NODES = 784;
 constexpr int32_t ALWAYS_TRUE = 2147483647;
 constexpr int32_t ALWAYS_FALSE = 2147483646;
 
-constexpr int TESTS = 100;
+constexpr int TESTS = 10000;
 
 enum {
     EXIT_WRONG_USAGE = 1,
