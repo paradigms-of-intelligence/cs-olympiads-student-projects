@@ -144,9 +144,6 @@ def main():
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
         prob = optax.apply_updates(prob, updates)
-        
-        
-
 
     # Print the network
     with open("trained_network.bin", "wb") as f:
