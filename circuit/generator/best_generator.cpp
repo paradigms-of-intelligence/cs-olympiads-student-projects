@@ -21,15 +21,15 @@ std::vector<std::pair<int, int>> conn;
 std::set<int> unused;
 
 int main() {
-  std::cout << "bin_n: " << std::flush;
+  std::cerr << "bin_n: " << std::flush;
   std::cin >> OPTIONS::bin_n;
-  std::cout << "bin_o: " << std::flush;
+  std::cerr << "bin_o: " << std::flush;
   std::cin >> OPTIONS::bin_o;
-  std::cout << "bin_d: " << std::flush;
+  std::cerr << "bin_d: " << std::flush;
   std::cin >> OPTIONS::bin_d;
-  std::cout << "uni_m: " << std::flush;
+  std::cerr << "uni_m: " << std::flush;
   std::cin >> OPTIONS::uni_m;
-  std::cout << "uni_t: " << std::flush;
+  std::cerr << "uni_t: " << std::flush;
   std::cin >> OPTIONS::uni_t;
   for(int i = 1; i <= INPUT_AMOUNT; ++i) unused.insert(i);
   conn.assign(INPUT_AMOUNT, {-1, -1});
