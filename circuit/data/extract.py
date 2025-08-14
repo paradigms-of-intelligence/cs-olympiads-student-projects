@@ -24,16 +24,16 @@ idd = 0
 
 with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
     for image in data:
+        buf = labels.read(1)
         if showimg:
             imge = np.asarray(image).squeeze()
             plt.imshow(imge)
-            buf = labels.read(1)
-            print(f"{str(np.frombuffer(buf, dtype=np.uint8).astype(np.int64))[1]}") 
+            print(f"{buf[0]}") 
             plt.show()
         for row in image:
             for p in row:
                 output += ("0" if p < 128 else "1")
-        output += f"\n{str(np.frombuffer(buf, dtype=np.uint8).astype(np.int64))[1]}\n"
-        idd = (idd+1)%100
-        if(idd == 0): print("Zero")
+        output += f"\n{buf[0]}\n"
+        idd += 1
+        if(idd%100 == 0): print(f"Zero: {idd}")
     file.write(output.strip())
