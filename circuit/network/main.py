@@ -24,26 +24,11 @@ LEARNING_RATE = 0.01
 # and be updated for each iteration
 BETA1_TIMESTAMP = 0
 BETA2_TIMESTAMP = 0
-
-def layer():
-    global LAYERS
-    l = [0 for _ in range(0, NETWORK_SIZE+1)]
-
-    att = 1
-    for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-        if l[LEFT_NODES[id]] == att or l[RIGHT_NODES[id]] == att: 
-            att+=1
-        l[id] = att
-
-    
-
-    LAYERS = jnp.array([l[id] for id in range(0, )] for _ in range(0, att+1))
     
 # basic inference function for probabilities
 @jax.jit
 def inference_function(p, left, right, values):
     '''Compute gate output from inputs a, b and 16-element prob vector p.'''
-
     pr = values[left]*values[right]
 
     # TODO: Test if using an Hadamard product is optimized better than this
