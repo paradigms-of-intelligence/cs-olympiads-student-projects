@@ -1,6 +1,10 @@
 import random 
 import jax.numpy as jnp
 import jax, math, functools, optax
+jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
+jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
 
 
 #ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞඞඞඞඞඞඞ
@@ -26,6 +30,20 @@ LEARNING_RATE = 0.01
 BETA1_TIMESTAMP = 0
 BETA2_TIMESTAMP = 0
 
+def layer():
+    global LAYERS
+    l = [0 for _ in range(0, NETWORK_SIZE+1)]
+
+    att = 1
+    for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
+        if l[LEFT_NODES[id]] == att or l[RIGHT_NODES[id]] == att: 
+            att+=1
+        l[id] = att
+
+    
+
+    LAYERS = jnp.array([l[id] for id in range(0, )] for _ in range(0, att+1))
+    
 # basic inference function for probabilities
 @jax.jit
 def inference_function(a: float, b: float, p):
@@ -54,10 +72,12 @@ def inference_function(a: float, b: float, p):
 
     return sum
 
+
 @jax.jit
 def loss_function(prob, values, correct_answer):
     # inference + evaluating cost function
     # feedforward
+
     for i in range(INPUT_SIZE+1,NETWORK_SIZE+1):
         prob = prob.at[i].set(jax.nn.softmax(prob[i]))
         values = values.at[i].set(inference_function(values[LEFT_NODES[i]], values[RIGHT_NODES[i]], prob[i]))
@@ -96,6 +116,8 @@ def main():
         # assumed to be the last N : TODO
         number_outputs = int(file.readline().strip())
         OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
+
+    layer()
 
     # Initialize the network with random probabilities
     prob = jnp.array([[random.random() for _ in range (16)] for _ in range(NETWORK_SIZE)], dtype=jnp.float16)
