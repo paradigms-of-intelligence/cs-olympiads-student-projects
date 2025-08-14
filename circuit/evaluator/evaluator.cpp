@@ -23,8 +23,6 @@ struct AndNot_network {
         result_nodes.resize(10);
         for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
         cout << "Output\n"; 
-
-
         graphinput.close();
     }
 

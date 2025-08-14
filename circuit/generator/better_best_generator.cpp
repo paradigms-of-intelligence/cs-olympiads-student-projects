@@ -12,7 +12,7 @@ int main() {
     int O = 50;
 
     // Defining a Size thingy
-    int N = (1 << 8) * O;
+    int N = (1 << 4) * O;
 
     // Calculating and giving out the size of the Network
     std::cout << N * 2 - O << "\n";

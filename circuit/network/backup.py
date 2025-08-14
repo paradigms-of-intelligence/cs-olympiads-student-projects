@@ -4,10 +4,8 @@ from jax import grad, jit
 import math
 import functools
 
-global NETWORK_SIZE
 NETWORK_SIZE = 0  # Number of gates in the network
 OUTPUT_NODES = []
-nodes = []   #Gates
 
 EPOCH_COUNT = 2
 INPUT_SIZE = 784
@@ -100,20 +98,49 @@ def inference_function(a: float, b: float, p):
 
 def activation(node: Gate):
     global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE
-    v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
-    Gate.value = function(v1, v2, Gate.p)    
+    v1, v2 = nodes[node.a].value, nodes[node.b].value
+    node.value = function(v1, v2, node.p)    
     pass
 
+# inference function
+
+# probs[0..num_gates][0..15] = probs for each gate
+# values[0..num_gates] = values for each gate, initialized with inputs in 0..784
+
+# values = values.at(i).set(value_of_gate_i))
+
+# return outputs
+
+# loss function: same inputs as inference +
+# correct output as a one-hot vector [0, 0, ..., 1, ..., 0]
+
+# return (outputs - correct_output) ** 2
+
+# take gradient of loss function w.r.t. probs -> use optax
+
+
+
+#    v     is a function
+# batch_loss = jax.vmap(loss, argnums=(index_of_))
+
+# 
+
+def f(probs, values, correct_output):
+    pass
+
+batched_f = jax.vmap(f, in_axes=(None, 0, 0))
+
 #@jit
-def inference():
-    global nodes, OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE
+def inference(nodes: list[Gate]):
+    global OUTPUT_NODES, NETWORK_SIZE, INPUT_SIZE
     # feedforward
     # ...
     # must be toposorted
+
     for i in range (INPUT_SIZE+1, NETWORK_SIZE):
-        Gate = nodes[i]
-        v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
-        Gate.value = inference_function(v1, v2, Gate.p)
+        gate = nodes[i]
+        v1, v2 = nodes[gate.a].value, nodes[gate.b].value
+        gate.value = inference_function(v1, v2, gate.p)
 
 #@functools.partial(jit, static_argnames=["answer"])
 def backpropagate(answer):
@@ -124,8 +151,10 @@ def backpropagate(answer):
 
     # evaluating cost function
     for i in range (0, len(OUTPUT_NODES)):
-        if (i//(len(OUTPUT_NODES)/10) == answer): nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
-        else: nodes[OUTPUT_NODES[i]].error = pow((nodes[OUTPUT_NODES[i]].error), 2)
+        if (i//(len(OUTPUT_NODES)/10) == answer): 
+            nodes[OUTPUT_NODES[i]].error = pow((1-nodes[OUTPUT_NODES[i]].error), 2)
+        else: 
+            nodes[OUTPUT_NODES[i]].error = pow((nodes[OUTPUT_NODES[i]].error), 2)
 
     for i in range (NETWORK_SIZE, INPUT_SIZE, -1):
         gate = nodes[i]
@@ -183,7 +212,7 @@ def main():
 
                 for i in range (1, INPUT_SIZE+1):
                     nodes[i].value = line[i-1]
-                inference()
+                inference(nodes)
                 
                 #read result
                 answer = int(file.readline().strip())

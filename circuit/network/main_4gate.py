@@ -29,30 +29,16 @@ BETA2_TIMESTAMP = 0
 # basic inference function for probabilities
 @jax.jit
 def inference_function(a: float, b: float, p):
-    pr = a*b
-    f = [0 for _ in range (0, 16)]
-    f[0] = 0
-    f[1] = pr*p[1]
-    f[2] = (a-pr)*p[2]
-    f[3] = a*p[3]
-    f[4] = (b-pr)*p[4]
-    f[5] = b*p[5]
-    f[6] = (a+b-2*pr)*p[6]
-    f[7] = (a+b-pr)*p[7]
-    f[8] = (1-a-b+pr)*p[8]
-    f[9] = (1-a-b+2*pr)*p[9]
-    f[10] = (1-b)*p[10]
-    f[11] = (1-b+pr)*p[11]
-    f[12] = (1-a)*p[12]
-    f[13] = (1-a+pr)*p[13]
-    f[14] = (1-pr)*p[14]
-    f[15] = p[15]
-    
-    sum = 0
-    for l in f: 
-        sum += l
+    return p[0] * a * b + p[1] * a * (1 - b) + p[2] * (1 - a) * b + p[3] * (1 - a) * (1 - b)
 
-    return sum
+def get_gate(index: int, prob) -> int:
+    num: int = 0
+
+    for i in range(4):
+        num += (round(prob[index][i]) << i)
+
+    return num
+    
 
 @jax.jit
 def loss_function(prob, values, correct_answer):
@@ -155,7 +141,8 @@ def main():
 
         # Write the network gates
         for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-            f.write(jnp.argmax(prob[id])[0].to_bytes(4, byteorder = 'little', signed=True))
+            gate_type = get_gate(id, prob)
+            f.write(gate_type.to_bytes(4, byteorder = 'little', signed=True))
             f.write(id.to_bytes(4, byteorder='little', signed=True))
             f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
             f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))

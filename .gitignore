@@ -1,13 +1,14 @@
 */build/
-.*/
-
-
 .clangd
+*/CMakeFiles/
 
+# File extensions
+*.txt
 *.bin
 *.out
-*.txt
 *.gch
-!requirements.txt
+*.exe
+.*/ 
 
-*/CMakeFiles/
+# Exceptions
+!requirements.txt
