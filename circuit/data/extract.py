@@ -19,7 +19,7 @@ print(f"Number of images: {num_images}")
 data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
 data = data.reshape(num_images, image_size, image_size, 1)
 
-output = ""
+output: list[str] = []
 idd = 0
 
 with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
@@ -32,8 +32,8 @@ with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
             plt.show()
         for row in image:
             for p in row:
-                output += ("0" if p < 128 else "1")
-        output += f"\n{buf[0]}\n"
+                output.append("0" if p < 128 else "1")
+        output.append(f"\n{buf[0]}\n")
         idd += 1
         if(idd%100 == 0): print(f"Zero: {idd}")
-    file.write(output.strip())
+    file.write("".join(output).strip())
