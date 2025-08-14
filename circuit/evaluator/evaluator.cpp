@@ -22,7 +22,6 @@ struct AndNot_network {
 
         result_nodes.resize(10);
         for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
-        cout << "Output\n"; 
         graphinput.close();
     }
 
@@ -53,33 +52,27 @@ struct AndNot_network {
         }
     }
 
-    int guess() {
+    float guess(int correct) {
         // return the network's guess for MNIST input
-        int g = -1;
-
+        float g = 0;
+        float cnt = 0;
         for (int counter = 0; counter < 10; counter++) {
             if (value[result_nodes[counter]-INPUT_NODES]) {
-                if(g != -1) return -1;
-                g = counter;
+                if(counter == correct) g = 1;
+                cnt++;
             }
         }
-
-        return g;
+        return g/cnt;
     }
 };
 
-bool make_test(int n, AndNot_network &net, const char* directory) {
+float make_test(AndNot_network &net, ifstream &in) {
     // 1 if test correct, 0 if not
     //to fix, variable `n` is useless
-    string path = directory;
-    path += "img_" + to_string(n) + ".txt";
-    
-    ifstream current_input(path, ios::in);
     vector<bool> input_values(INPUT_NODES);
     string input_image;
-
-    getline(current_input, input_image);
-
+    getline(in, input_image);
+    // cout  << INPUT_NODES << " " << input_image.size() << "\n";
     for (int i = 0; i < (int)INPUT_NODES; i++) {
         input_values[i] = (input_image[i] == '1');
     }
@@ -90,10 +83,8 @@ bool make_test(int n, AndNot_network &net, const char* directory) {
 
     //get the correct result and compare
     string correct;
-    getline(current_input, correct);
-
-    int gs = net.guess();
-    return correct[0] == ('0'+gs);
+    getline(in, correct);
+    return net.guess(correct[0]-'0');
 }   
 
 int main(int argc, char const *argv[]) {
@@ -105,11 +96,16 @@ int main(int argc, char const *argv[]) {
     AndNot_network net;
     net.init(argv[2]);
 
+
+    ifstream test_input(argv[1], ios::in);
     // test on the test data
     float num = 0;
     for (int i = 0; i < TESTS; i++) {
-        if (make_test(i, net, argv[1])) num++;
+        if(i%250 == 0) cout << "Tested " << i << "/" << TESTS << "\n";
+        num += make_test(net, test_input);
     }
+    
+    cout << "Tested " << TESTS << "/" << TESTS << "\n";
 
     cout << num/(float)TESTS << endl;
 }

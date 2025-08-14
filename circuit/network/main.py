@@ -12,7 +12,7 @@ RIGHT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 20
 INPUT_SIZE = 784
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 
 # Training constants
 ALPHA = 0.001
@@ -177,9 +177,10 @@ def main():
         # For each image in the batch read training data
         # TODO: Stop reading from BATCH_SIZE files, just read a single file with every input
         
-        for test_case in range(0, BATCH_SIZE):
-            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
-                #read training input
+        with open("../data/testdata.txt", 'r') as file:
+            for test_case in range(0, BATCH_SIZE):
+
+                # read training input
                 line = list(map(float, file.readline().strip()))
 
                 for id in range (1, INPUT_SIZE+1):
