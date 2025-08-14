@@ -10,16 +10,16 @@ LEFT_NODES = []
 RIGHT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 30
+EPOCH_COUNT = 200
 INPUT_SIZE = 784
-BATCH_SIZE = 64
+BATCH_SIZE = 10000
 
 # Training constants
 ALPHA = 0.001
 BETA2 = .999
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.25
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
 BETA1_TIMESTAMP = 0
@@ -69,32 +69,15 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
         start_of_current_layer = end_of_current_layer
 
     outputs = jnp.array([values[node] for node in OUTPUT_NODES])
-@jax.jit
-def fitting_function(a):
 
-    SUS = jnp.array([0.02, 0.5, 0.5, 1, 0.5, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.02])    
+    return jnp.mean(jnp.sqrt(jnp.abs(outputs - correct_answer)))
 
-    jnp.multiply(a, SUS)
-
-@jax.jit
-def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
-    '''Vectorize loss_function over the batch and return mean loss.'''
-
-    batch_fitting_function = jax.vmap(fitting_function, in_axes=(0))
-
-    for i in range(len(prob)):
-        prob[i] = batch_fitting_function(prob[i])
-        prob[i] = jax.nn.softmax(prob[i], 1)
-
-    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
-    loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
-    return jnp.mean(loss)
-    return jnp.mean(jnp.square(outputs - correct_answer))
 
 @jax.jit
 def fitting_function(a):
 
     SUS = jnp.array([0.02, 0.5, 0.5, 0.6, 0.5, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.02])    
+    # SUS = jnp.array([0.02, 0.5, 0.5, 0.6, 0.5, 0.6, 0, 0, 0, 0, 0.5, 0, 0.5, 0, 0, 0.02])    
 
     return jnp.multiply(a, SUS)
 
@@ -110,7 +93,7 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
 
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
     loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
-    return jnp.mean(loss)
+    return jnp.sum(loss)
 
 def main():
     '''Load architecture, train for EPOCH_COUNT epochs, and save network.'''
@@ -180,22 +163,31 @@ def main():
 
     values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE+1), dtype=jnp.float32)
     answer = []
-    with open("../data/testdata.txt", 'r') as file:
-        for test_case in range(0, BATCH_SIZE):
+    values_list = []
+    answers_list = []
 
+    with open("../data/training.txt", 'r') as file:
+        for test_case in range(BATCH_SIZE):
             # read training input
             line = list(map(float, file.readline().strip()))
 
-            for id in range (1, INPUT_SIZE+1):
-                values = values.at[test_case, id].set(line[id-1])
+            # one row: pad with zero in col 0, then inputs
+            row = [0.0] + line + ([0.0] * 2340)
+            values_list.append(row)
 
             # Setting the correct answer
             ans = int(file.readline().strip())
+            one_hot = [0] * len(OUTPUT_NODES)
+            one_hot[ans] = 1
+            answers_list.append(one_hot)
 
-            answer.append([0 for _ in range(len(OUTPUT_NODES))])
-            answer[test_case][ans] = 1
             print("Test case " + str(test_case))
+
+    # Convert to JAX arrays once at the end
+    values = jnp.array(values_list, dtype=jnp.float32)
+    answer = jnp.array(answers_list, dtype=jnp.float32)
         
+
     correct_answer = jnp.array(answer)
 
     BETA1_TIMESTAMP = 1
@@ -242,6 +234,9 @@ def main():
         for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
             f.write(id.to_bytes(4, byteorder='little', signed=True))
     
+    for i in range(len(prob)):
+        prob[i] = jax.nn.softmax(prob[i], 1)
+
     with open("sus.txt", "w") as f:
         # Write the network size -> 32 bits/ 4 bytes
 

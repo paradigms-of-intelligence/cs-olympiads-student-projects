@@ -109,5 +109,5 @@ int main(int argc, char const *argv[]) {
     
     cout << "Tested " << TESTS << "/" << TESTS << "\n";
 
-    cout << num/(float)TESTS << endl;
+    cout << 100.0 * num/(float)TESTS << "% accuracy\n";
 }
