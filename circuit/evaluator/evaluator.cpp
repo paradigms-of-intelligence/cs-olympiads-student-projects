@@ -101,8 +101,11 @@ int main(int argc, char const *argv[]) {
     // test on the test data
     float num = 0;
     for (int i = 0; i < TESTS; i++) {
+        if(i%250 == 0) cout << "Tested " << i << "/" << TESTS << "\n";
         num += make_test(net, test_input);
     }
+    
+    cout << "Tested " << TESTS << "/" << TESTS << "\n";
 
     cout << num/(float)TESTS << endl;
 }
