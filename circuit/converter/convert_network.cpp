@@ -283,9 +283,6 @@ int main(int argc, char const *argv[]) {
     replace_gates();
 
     //Writing sequence
-    int32_t final_node_count = (int32_t)final_nodes.size() + INPUT_NODES;
-
-    // std::cerr << final_node_count << " " << final_nodes.size() << " " << next_free_node << "\n";
     write_int32_t(t2_ofstream, next_free_node-1);
 
     for(size_t i = 0; i < final_nodes.size(); i++) {

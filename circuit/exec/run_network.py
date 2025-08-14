@@ -14,7 +14,8 @@ def main():
     datefmt='%H:%M:%S'
     )
 
-    
+    # Set ENV_VARIABILES
+    os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
     os.system("python3 ../generator/perm_gen.py > ./network_architecture.txt")
