@@ -62,6 +62,8 @@ struct AndNot_network {
                 cnt++;
             }
         }
+        if(cnt == 0) return 0.1;
+
         return g/cnt;
     }
 };
