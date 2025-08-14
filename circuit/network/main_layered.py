@@ -30,7 +30,6 @@ BETA2_TIMESTAMP = 0
 def inference_function(p, left, right, values):
     '''Compute gate output from inputs a, b and 16-element prob vector p.'''
     pr = values[left]*values[right]
-
     # TODO: Test if using an Hadamard product is optimized better than this
     sum = (
     pr * p[1]
@@ -49,33 +48,35 @@ def inference_function(p, left, right, values):
     + (1 - pr) * p[14]
     + p[15]
     )
+    jax.debug.print("{}", sum)
     return sum
+
+layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
 
 
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return MSE between outputs and correct_answer.'''
-    layer_inference = jax.vmap(inference_function, in_axes=(0, 0, 0, None))
-     
-
-    start_of_current_layer = 1
-    for c in range(len(prob)):
+    start_of_current_layer = 785
+    for c in range(1, len(prob)):
         end_of_current_layer = start_of_current_layer+len(prob[c])
 
         aus = layer_inference(prob[c], left_nodes[c], right_nodes[c], values)
 
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
+        #jax.debug.print("{}", values)
         end_of_current_layer = start_of_current_layer
 
     outputs = jnp.array([values[node] for node in OUTPUT_NODES])
 
     return jnp.mean(jnp.square(outputs - correct_answer))
 
-@jax.jit
+#@jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     '''Vectorize loss_function over the batch and return mean loss.'''
-    prob = jax.nn.softmax(prob, 1)
-    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None)) 
+    for i in range(len(prob)):
+        prob[i] = jax.nn.softmax(prob[i], 1)
+    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
     loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
     return jnp.mean(loss)
 
@@ -116,35 +117,40 @@ def main():
         number_outputs = int(file.readline().strip())
         OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
 
+        # Calculate the layers
         l = [0 for _ in range(0, NETWORK_SIZE+1)]
         aus = []
         att = 0
         for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
             if l[LEFT[id]] == att or l[RIGHT[id]] == att: 
                 att+=1
-                l.append([])
-            l[-1].append(id)
+                aus.append([])
+            aus[-1].append(id)
+            l[id] = att
 
-        
+
+        # Initialize layers
+        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
+        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
+        prob.append(jnp.zeros((INPUT_SIZE+1, 16), dtype=jnp.float32))
         for x in aus:
-            left_nodes.append([])
-            right_nodes.append([])
-            prob.append([])
+            left = []
+            right = []
+            p = []
             for id in x:
-                left_nodes[-1].append(LEFT[id])
-                right_nodes[-1].append(RIGHT[id])
-                prob[-1].append([random.random() for _ in range(16)])
+                left.append(LEFT[id])
+                right.append(RIGHT[id])
+                p.append([random.random() for _ in range(16)])
+
+            left_nodes.append(jnp.array(left))
+            right_nodes.append(jnp.array(right))
+            prob.append(jnp.array(p))
 
 
-    LEFT_NODES = jnp.array(left_nodes)
-    RIGHT_NODES = jnp.array(right_nodes)
-    PROBS = jnp.array(prob)
 
-    prob = jnp.array([[random.random() for _ in range (16)] for _ in range(NETWORK_SIZE)], dtype=jnp.float16)
-    
     BETA1_TIMESTAMP = 1
     BETA2_TIMESTAMP = 1
-    # Start training routine
+    # Start training routine.append
     for epoch in range (0, EPOCH_COUNT):
         print("Epoch " + str(epoch+1))
         # Update timestamps (these represent BETA^t)
@@ -153,10 +159,10 @@ def main():
 
         # Initialize optimizer
         optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1_TIMESTAMP, b2=BETA2_TIMESTAMP, eps=EPSILON) 
-        opt_state = optimizer.init(PROBS)
+        opt_state = optimizer.init(prob)
 
         # Initialize values to 0 for the batch
-        values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float16)
+        values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float32)
         answer = []
 
         # For each image in the batch read training data
@@ -181,16 +187,16 @@ def main():
         correct_answer = jnp.array(answer)
 
         # Forward pass
-        loss_value = scalar_loss(PROBS, values, correct_answer, LEFT_NODES, RIGHT_NODES)
-        print("Loss value: " + str(loss_value))
+        loss_value = scalar_loss(prob, values, correct_answer, left_nodes, right_nodes)
+        print("Mean value: " + str(loss_value))
 
         # Backward pass
         # TODO: CRITICAL AND SUS, Optimize this please, it takes minutes per epoch
-        gradients = jax.grad(scalar_loss, argnums=0)(PROBS, values, correct_answer, LEFT_NODES, RIGHT_NODES)
+        gradients = jax.grad(scalar_loss, argnums=0)(prob, values, correct_answer, left_nodes, right_nodes)
         
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
-        PROBS = optax.apply_updates(PROBS, updates)
+        prob = optax.apply_updates(prob, updates)
         
         
 
