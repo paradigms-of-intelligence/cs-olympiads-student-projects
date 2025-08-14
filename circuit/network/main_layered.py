@@ -48,7 +48,7 @@ def inference_function(p, left, right, values):
     + (1 - pr) * p[14]
     + p[15]
     )
-    jax.debug.print("{}", sum)
+    #jax.debug.print("{}", sum)
     return sum
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -147,6 +147,25 @@ def main():
             prob.append(jnp.array(p))
 
 
+    values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float32)
+    answer = []
+    with open("../data/testdata.txt", 'r') as file:
+        for test_case in range(0, BATCH_SIZE):
+
+            # read training input
+            line = list(map(float, file.readline().strip()))
+
+            for id in range (1, INPUT_SIZE+1):
+                values = values.at[test_case, id].set(line[id-1])
+
+            # Setting the correct answer
+            ans = int(file.readline().strip())
+
+            answer.append([0 for _ in range(len(OUTPUT_NODES))])
+            answer[test_case][ans] = 1
+            print("Test case " + str(test_case))
+        
+    correct_answer = jnp.array(answer)
 
     BETA1_TIMESTAMP = 1
     BETA2_TIMESTAMP = 1
@@ -161,31 +180,6 @@ def main():
         optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1_TIMESTAMP, b2=BETA2_TIMESTAMP, eps=EPSILON) 
         opt_state = optimizer.init(prob)
 
-        # Initialize values to 0 for the batch
-        values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float32)
-        answer = []
-
-        # For each image in the batch read training data
-        # TODO: Stop reading from BATCH_SIZE files, just read a single file with every input
-        
-        with open("../data/testdata.txt", 'r') as file:
-            for test_case in range(0, BATCH_SIZE):
-
-                # read training input
-                line = list(map(float, file.readline().strip()))
-
-                for id in range (1, INPUT_SIZE+1):
-                    values = values.at[test_case, id].set(line[id-1])
-
-                # Setting the correct answer
-                ans = int(file.readline().strip())
-
-                answer.append([0 for _ in range(len(OUTPUT_NODES))])
-                answer[test_case][ans] = 1
-                print("Test case " + str(test_case))
-            
-        correct_answer = jnp.array(answer)
-
         # Forward pass
         loss_value = scalar_loss(prob, values, correct_answer, left_nodes, right_nodes)
         print("Mean value: " + str(loss_value))
@@ -198,26 +192,25 @@ def main():
         updates, opt_state = optimizer.update(gradients, opt_state)
         prob = optax.apply_updates(prob, updates)
         
-        
 
 
-    # Print the network
-    with open("trained_network.bin", "wb") as f:
-        # Write the network size -> 32 bits/ 4 bytes
-        f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
+    # # Print the network
+    # with open("trained_network.bin", "wb") as f:
+    #     # Write the network size -> 32 bits/ 4 bytes
+    #     f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
 
-        # Write the network gates
-        for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-            # f.write(jnp.argmax(prob[id])[0].to_bytes(4, byteorder = 'little', signed=True))
-            gate_index = int(jnp.argmax(prob[id]))  # int(...) also works
-            f.write(gate_index.to_bytes(4, byteorder='little', signed=True))
+    #     # Write the network gates
+    #     for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
+    #         # f.write(jnp.argmax(prob[id])[0].to_bytes(4, byteorder = 'little', signed=True))
+    #         gate_index = int(jnp.argmax(prob[id]))  # int(...) also works
+    #         f.write(gate_index.to_bytes(4, byteorder='little', signed=True))
 
-            f.write(id.to_bytes(4, byteorder='little', signed=True))
-            f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
-            f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
+    #         f.write(id.to_bytes(4, byteorder='little', signed=True))
+    #         f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
+    #         f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
 
-        for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
-            f.write(id.to_bytes(4, byteorder='little', signed=True))
+    #     for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
+    #         f.write(id.to_bytes(4, byteorder='little', signed=True))
 
 
 if __name__ == "__main__":
