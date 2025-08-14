@@ -69,7 +69,6 @@ def inference_function(a: float, b: float, p):
     return p[0] * a * b + p[1] * a * (1 - b) + p[2] * (1 - a) * b + p[3] * (1 - a) * (1 - b)
 
 def get_gate(index: int, p) -> int:
-    type(p)
     num: int = 0
 
     for i in range(4):
@@ -79,8 +78,8 @@ def get_gate(index: int, p) -> int:
     
 def activation(node: Gate):
     global nodes, OUTPUT_NODES, network_size, INPUT_SIZE
-    v1, v2 = nodes[Gate.a].value, nodes[Gate.b].value
-    Gate.value = function(v1, v2, Gate.p)    
+    v1, v2 = nodes[node.a].value, nodes[node.b].value
+    node.value = function(v1, v2, node.p)    
     pass
 
     # ?
