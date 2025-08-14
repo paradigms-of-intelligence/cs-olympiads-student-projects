@@ -1,11 +1,6 @@
 import random 
 import jax.numpy as jnp
 import jax, math, functools, optax
-jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
-jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
-jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
-
 
 #ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞඞඞඞඞඞඞ
 # Network constants
@@ -45,55 +40,90 @@ def layer():
     LAYERS = jnp.array([l[id] for id in range(0, )] for _ in range(0, att+1))
     
 # basic inference function for probabilities
-
 @jax.jit
 def inference_function(a: float, b: float, p):
+    '''Compute gate output from inputs a, b and 16-element prob vector p.'''
     pr = a*b
-    f = [0 for _ in range (0, 16)]
-    f[0] = 0
-    f[1] = pr*p[1]
-    f[2] = (a-pr)*p[2]
-    f[3] = a*p[3]
-    f[4] = (b-pr)*p[4]
-    f[5] = b*p[5]
-    f[6] = (a+b-2*pr)*p[6]
-    f[7] = (a+b-pr)*p[7]
-    f[8] = (1-a-b+pr)*p[8]
-    f[9] = (1-a-b+2*pr)*p[9]
-    f[10] = (1-b)*p[10]
-    f[11] = (1-b+pr)*p[11]
-    f[12] = (1-a)*p[12]
-    f[13] = (1-a+pr)*p[13]
-    f[14] = (1-pr)*p[14]
-    f[15] = p[15]
-    
-    sum = 0
-    for l in f: 
-        sum += l
 
+    # f = [0 for _ in range (0, 16)]
+    # f[0] = 0
+    # f[1] = pr*p[1]
+    # f[2] = (a-pr)*p[2]
+    # f[3] = a*p[3]
+    # f[4] = (b-pr)*p[4]
+    # f[5] = b*p[5]
+    # f[6] = (a+b-2*pr)*p[6]
+    # f[7] = (a+b-pr)*p[7]
+    # f[8] = (1-a-b+pr)*p[8]
+    # f[9] = (1-a-b+2*pr)*p[9]
+    # f[10] = (1-b)*p[10]
+    # f[11] = (1-b+pr)*p[11]
+    # f[12] = (1-a)*p[12]
+    # f[13] = (1-a+pr)*p[13]
+    # f[14] = (1-pr)*p[14]
+    # f[15] = p[15]
+
+    # TODO: Test if using an Hadamard product is optimized better than this
+    sum = (
+    pr * p[1]
+    + (a - pr) * p[2]
+    + a * p[3]
+    + (b - pr) * p[4]
+    + b * p[5]
+    + (a + b - 2 * pr) * p[6]
+    + (a + b - pr) * p[7]
+    + (1 - a - b + pr) * p[8]
+    + (1 - a - b + 2 * pr) * p[9]
+    + (1 - b) * p[10]
+    + (1 - b + pr) * p[11]
+    + (1 - a) * p[12]
+    + (1 - a + pr) * p[13]
+    + (1 - pr) * p[14]
+    + p[15]
+    )
     return sum
 
 
 @jax.jit
 def loss_function(prob, values, correct_answer):
+<<<<<<< HEAD
     # inference + evaluating cost function
     # feedforward
 
+=======
+    '''Run forward pass and return MSE between outputs and correct_answer.'''
+
+    prob_copy = []
+    values_copy = []
+>>>>>>> afd7cc5759a358a692b851217dae70f68b9fcf12
     for i in range(INPUT_SIZE+1,NETWORK_SIZE+1):
-        prob = prob.at[i].set(jax.nn.softmax(prob[i]))
-        values = values.at[i].set(inference_function(values[LEFT_NODES[i]], values[RIGHT_NODES[i]], prob[i]))
+        prob_copy.append(jax.nn.softmax(prob[i]))
+        values_copy.append(inference_function(values[LEFT_NODES[i]], values[RIGHT_NODES[i]], prob_copy[-1]))
+
+    prob = jnp.array(prob_copy)
+    values = jnp.array(values_copy)
 
     outputs = jnp.array([values[node] for node in OUTPUT_NODES])
+
     return jnp.mean(jnp.square(outputs - correct_answer))
 
 @jax.jit
 def scalar_loss(prob, values, correct_answer):
+    '''Vectorize loss_function over the batch and return mean loss.'''
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0)) 
     loss = batch_loss(prob, values, correct_answer)
     return jnp.mean(loss)
 
 
 def main():
+    '''Load architecture, train for EPOCH_COUNT epochs, and save network.'''
+
+    #Cache jit compilation
+    jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
+    jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+    jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
+
     global BETA1_TIMESTAMP, BETA2_TIMESTAMP, BATCH_SIZE, EPSILON, LEARNING_RATE, INPUT_SIZE, OUTPUT_NODES
 
     # Load network architecture
@@ -113,14 +143,15 @@ def main():
             LEFT_NODES.append(left)
             RIGHT_NODES.append(right)
 
-        # Initialize output nodes
-        # assumed to be the last N : TODO
+        # Initialize output nodes (assumed to be the last N)
         number_outputs = int(file.readline().strip())
         OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
 
     layer()
 
     # Initialize the network with random probabilities
+
+
     prob = jnp.array([[random.random() for _ in range (16)] for _ in range(NETWORK_SIZE)], dtype=jnp.float16)
     
     BETA1_TIMESTAMP = 1
@@ -139,7 +170,10 @@ def main():
         # Initialize values to 0 for the batch
         values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float16)
         answer = []
+
         # For each image in the batch read training data
+        # TODO: Stop reading from BATCH_SIZE files, just read a single file with every input
+        
         for test_case in range(0, BATCH_SIZE):
             with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
                 #read training input
@@ -161,8 +195,9 @@ def main():
         loss_value = scalar_loss(prob, values, correct_answer)
         print("Loss value: " + str(loss_value))
 
-        #Backward pass
-        gradients = jax.jit(jax.grad(scalar_loss, argnums=0))(prob, values, correct_answer)
+        # Backward pass
+        # TODO: CRITICAL AND SUS, Optimize this please, it takes minutes per epoch
+        gradients = jax.grad(scalar_loss, argnums=0)(prob, values, correct_answer)
         
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
