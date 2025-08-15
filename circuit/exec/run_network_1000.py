@@ -7,7 +7,6 @@ def cleanup():
     pass
 
 def main():
-
     coloredlogs.install(
     level='DEBUG',
     fmt='%(asctime)s.%(msecs)03d %(hostname)s %(name)s[%(process)d] %(levelname)s %(message)s',
@@ -23,7 +22,7 @@ def main():
 
     # # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main_varout.py") #prints a trained_network.bin
+    os.system("python3 ../network/main.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # # Converter
