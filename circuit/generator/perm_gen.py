@@ -9,9 +9,9 @@ for i in range (0, LAYER_NUMBER):
     tp = [k for k in range (i*INPUT_NODES+1, (i+1)*INPUT_NODES+1)]
     shuffle(tp)
     for x in tp:
-        aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES+1)
+        aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES)
         while (aus == x):
-            aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES+1)
+            aus = randint((i)*INPUT_NODES+1, (i+1)*INPUT_NODES)
         print(x, aus)
         COUNTER += 1
     
