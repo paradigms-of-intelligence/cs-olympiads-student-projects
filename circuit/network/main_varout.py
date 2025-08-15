@@ -11,7 +11,7 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 20000
+EPOCH_COUNT = 100
 BATCH_SIZE = 500
 
 # Training constants
@@ -19,7 +19,11 @@ BATCH_SIZE = 500
 BETA2 = .9999
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.002
+LEARNING_RATE = 0.005
+
+
+# This should be multiplied by BETA1 and BETA2
+# and be updated for each iteration
     
 # basic inference function for probabilities
 @jax.jit
@@ -105,7 +109,7 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
 
 
 def input_network(left_nodes, right_nodes, prob, aus):
-    global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES
+    global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     with open("network_architecture.txt", 'r') as file:
         # Initialize network size 
         NETWORK_SIZE = int(file.readline().strip())
@@ -168,7 +172,7 @@ def read_values(file, values, answers):
 
             # Setting the correct answer
             ans = int(file.readline().strip())
-            one_hot = [0] * len(OUTPUT_NODES)
+            one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
     print("Values read")       
