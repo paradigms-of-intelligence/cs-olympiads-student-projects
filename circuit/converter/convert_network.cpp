@@ -258,7 +258,7 @@ int main(int argc, char const *argv[]) {
 
     node_count = read_int32_t(t16_ifstream);
 
-    first_output_id = node_count - 10 + 1; 
+    first_output_id = node_count - OUTPUT_NODES + 1; 
     next_free_node = node_count + 1;
 
     for(size_t i = 0; i < node_count-INPUT_NODES; ++i)
@@ -290,7 +290,9 @@ int main(int argc, char const *argv[]) {
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
     }
 
-    for (int32_t i = first_output_id; i < first_output_id+10; i++) {
+    write_int32_t(t2_ofstream, OUTPUT_NODES);
+
+    for (int32_t i = first_output_id; i < first_output_id+OUTPUT_NODES; i++) {
         write_int32_t(t2_ofstream, i);
     }
 
