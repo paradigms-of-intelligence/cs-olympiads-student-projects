@@ -261,7 +261,7 @@ int main(int argc, char const *argv[]) {
     first_output_id = node_count - OUTPUT_NODES + 1; 
     next_free_node = node_count + 1;
 
-    for(size_t i = 0; i < node_count-INPUT_NODES; ++i)
+    for(int32_t i = 0; i < node_count-INPUT_NODES; ++i)
     {       
         int32_t node_value[4];
         node_value[0] = read_int32_t(t16_ifstream);

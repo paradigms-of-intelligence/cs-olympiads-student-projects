@@ -12,7 +12,7 @@ LEFT_NODES = []
 RIGHT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 20000
+EPOCH_COUNT = 100
 BATCH_SIZE = 500
 
 # Training constants
@@ -20,7 +20,7 @@ BATCH_SIZE = 500
 BETA2 = .9999
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.002
+LEARNING_RATE = 0.005
 
 
 # This should be multiplied by BETA1 and BETA2
@@ -77,8 +77,14 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
         start_of_current_layer = end_of_current_layer
     
     category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
-    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])  # shape (10,)
+    # jax.debug.print("{}", OUTPUT_NODES[0*category_size:((1)*category_size)])
+    # jax.debug.print("{}", len(OUTPUT_NODES))
+    # jax.debug.print("{}", category_size)
 
+
+    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in  
+    OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])  # shape (10,)
+    
     return binary_cross_entropy_stable(outputs, correct_answer)
 
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
@@ -135,7 +141,7 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
 
 
 def input_network(left_nodes, right_nodes, prob, aus):
-    global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES
+    global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     with open("network_architecture.txt", 'r') as file:
         # Initialize network size 
         NETWORK_SIZE = int(file.readline().strip())
@@ -198,21 +204,19 @@ def read_values(file, values, answers):
 
             # Setting the correct answer
             ans = int(file.readline().strip())
-            one_hot = [0] * len(OUTPUT_NODES)
+            one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
     print("Values read")       
     
 
 def test_network(prob, values, left_nodes, right_nodes):
-    global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
+    global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE, OUTPUT_SIZE
     values_list = []
     answers_list = []
     read_values("../data/testdata.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
-
-    batch_fitting_function = jax.vmap(fitting_function, in_axes=(0))
 
     for i in range(len(prob)):
         prob[i] = jax.nn.softmax(prob[i], 1)
@@ -223,7 +227,7 @@ def test_network(prob, values, left_nodes, right_nodes):
 
 
 def print_network(aus, prob, left_nodes, right_nodes):
-    global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, OUTPUT_NODES
+    global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, OUTPUT_NODES, OUTPUT_SIZE
     # # Print the network
     with open("trained_network.bin", "wb") as f:
         # Write the network size -> 32 bits/ 4 bytes

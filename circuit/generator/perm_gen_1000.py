@@ -1,10 +1,9 @@
 from random import *
 
-LAYER_NUMBER = 5
 INPUT_NODES = 784
 OUTPUT_NODES = 1000
 
-LAYERS = [INPUT_NODES, 2000, 2000, 2000, OUTPUT_NODES]
+LAYERS = [INPUT_NODES, 3000, 2000, 2000, 1500, OUTPUT_NODES]
 
 
 
@@ -14,7 +13,12 @@ first_layer_node = 1
 for layer in range(1, len(LAYERS)):
     prev_size = LAYERS[layer-1]
     next_size = LAYERS[layer] # SUS SUS SUS SUS SUS SUS SUS SUS TRIBUTO GORMITA SUS SUS SUS SUS
-    nl = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
+    nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
+
+    while len(nl) < next_size:
+        nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
+    shuffle(nl)
+
     nr = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
     first_layer_node += prev_size
 
