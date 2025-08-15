@@ -11,15 +11,15 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 100
-BATCH_SIZE = 500
+EPOCH_COUNT = 20
+BATCH_SIZE = 100
 
 # Training constants
 #ALPHA = 0.001
 BETA2 = .9999
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.05
 
 
 # This should be multiplied by BETA1 and BETA2
@@ -68,7 +68,6 @@ def inference(prob, left_nodes, right_nodes, values):
         end_of_current_layer = start_of_current_layer+len(prob[c])
         aus = layer_inference(prob[c], left_nodes[c], right_nodes[c], values)
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
-        #jax.debug.print("{}", values)
         start_of_current_layer = end_of_current_layer
     
     category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
@@ -82,6 +81,7 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
     return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer)
 
+@jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
     # Boolean vector: True where prediction > 0.5
@@ -177,7 +177,7 @@ def read_values(file, values, answers):
             answers.append(one_hot)
     print("Values read")       
     
-
+#@jax.jit
 def train_network(prob, left_nodes, right_nodes):
     global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT
     # Read training data
@@ -205,8 +205,9 @@ def train_network(prob, left_nodes, right_nodes):
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
         prob = optax.apply_updates(prob, updates)
+    return prob
 
-
+@jax.jit
 def test_network(prob, left_nodes, right_nodes):
     global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
     values_list = []
@@ -261,7 +262,7 @@ def main():
     input_network(left_nodes, right_nodes, prob, aus)
 
     #Train network
-    train_network(prob, left_nodes, right_nodes)
+    prob = train_network(prob, left_nodes, right_nodes)
 
     # Test network on testadata
     print(test_network(prob, left_nodes, right_nodes))
