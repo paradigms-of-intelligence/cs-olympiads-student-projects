@@ -23,7 +23,7 @@ def main():
 
     # # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main.py") #prints a trained_network.bin
+    os.system("python3 ../network/main_4gate.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # # Converter
