@@ -5,13 +5,14 @@ import jax, math, functools, optax
 #ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞඞඞඞඞඞඞ
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
+OUTPUT_SIZE = 0
+INPUT_SIZE = 784
 OUTPUT_NODES = []
 LEFT_NODES = []
 RIGHT_NODES = []
 
 # Training input parameters
 EPOCH_COUNT = 20000
-INPUT_SIZE = 784
 BATCH_SIZE = 500
 
 # Training constants
@@ -21,7 +22,7 @@ BETA1 = .9
 EPSILON = 1e-8
 LEARNING_RATE = 0.002
 
-OUTPUT_SIZE = 0
+
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
     
@@ -63,7 +64,8 @@ def binary_cross_entropy_stable(y_hat, y):
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return MSE between outputs and correct_answer.'''
-    start_of_current_layer = 785
+    global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
+    start_of_current_layer = INPUT_SIZE+1
 
     for c in range(1, len(prob)):
         end_of_current_layer = start_of_current_layer+len(prob[c])
@@ -73,14 +75,16 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
         #jax.debug.print("{}", values)
         start_of_current_layer = end_of_current_layer
-
-    outputs = jnp.array([values[node] for node in OUTPUT_NODES])
+    
+    category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
+    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])  # shape (10,)
 
     return binary_cross_entropy_stable(outputs, correct_answer)
 
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    start_of_current_layer = 785
+    global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
+    start_of_current_layer = INPUT_SIZE+1
 
     for c in range(1, len(prob)):
         end_of_current_layer = start_of_current_layer+len(prob[c])
@@ -90,7 +94,8 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
         start_of_current_layer = end_of_current_layer
 
-    outputs = jnp.array([values[node] for node in OUTPUT_NODES])  # shape (10,)
+    category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
+    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])  # shape (10,)
 
     # Boolean vector: True where prediction > 0.5
     predicted = outputs > 0.5
@@ -111,10 +116,7 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
 
 @jax.jit
 def fitting_function(a):
-
     SUS = jnp.array([0.02, 0.5, 0.5, 5, 0.5, 5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.02])    
-    # SUS = jnp.array([0.02, 0.5, 0.5, 0.6, 0.5, 0.6, 0, 0, 0, 0, 0.5, 0, 0.5, 0, 0, 0.02])    
-
     return jnp.multiply(a, SUS)
 
 @jax.jit
@@ -236,6 +238,7 @@ def print_network(aus, prob, left_nodes, right_nodes):
                 f.write(int(left_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
                 f.write(int(right_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
 
+        f.write(OUTPUT_SIZE.to_bytes(4, byteorder='little', signed=True))
         for id in (OUTPUT_NODES):
             f.write(id.to_bytes(4, byteorder='little', signed=True))
 
@@ -252,23 +255,25 @@ def main():
     global BETA1_TIMESTAMP, BETA2_TIMESTAMP, BATCH_SIZE, EPSILON, LEARNING_RATE, INPUT_SIZE, OUTPUT_NODES
     global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, EPOCH_COUNT, OUTPUT_SIZE
 
+    # Load network architecture
     left_nodes = []
     right_nodes = []
     prob = []
     aus = []
-    # Load network architecture
     input_network(left_nodes, right_nodes, prob, aus)
 
+
+    # Read training data
     values_list = []
     answers_list = []
     read_values("../data/training.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
+
     # Start training routine.append
     for epoch in range (0, EPOCH_COUNT):
         print("Epoch " + str(epoch+1))
-        # Update timestamps (these represent BETA^t)
 
         # Initialize optimizer
         optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1, b2=BETA2, eps=EPSILON) 
@@ -279,18 +284,18 @@ def main():
         print("Mean value: " + str(loss_value))
 
         # Backward pass
-        # TODO: CRITICAL AND SUS, Optimize this please, it takes minutes per epoch
         gradients = jax.grad(scalar_loss)(prob, values, correct_answer, left_nodes, right_nodes)
         
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
         prob = optax.apply_updates(prob, updates)
 
+    # Test network on testadata
     print(test_network(prob, values, left_nodes, right_nodes))
+
+    # Print the network to binary file
     print_network(aus, prob, left_nodes, right_nodes)
     
-    
-
 
     with open("sus.txt", "w") as f:
         
