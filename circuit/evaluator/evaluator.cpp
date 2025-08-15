@@ -22,6 +22,7 @@ struct AndNot_network {
 
         result_nodes.resize(10);
         for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
+
         graphinput.close();
     }
 
@@ -29,15 +30,14 @@ struct AndNot_network {
         for (int i = 1; i <= (int)INPUT_NODES; i++) value[i] = in[i-1];
     }
 
-
     bool getvalue(int id){
         bool c = 0;
         if (id < 0) {
             assert(-id <= N);
             c = !value[-id];
         }
-        else if (id == ALWAYS_TRUE) c = 1;
-        else if (id == ALWAYS_FALSE) c = 0;
+        else if (abs(id) == ALWAYS_TRUE) c = 1;
+        else if (abs(id) == ALWAYS_FALSE) c = 0;
         else {
             assert( id <= N );
             c = value[id];
@@ -57,7 +57,7 @@ struct AndNot_network {
         float g = 0;
         float cnt = 0;
         for (int counter = 0; counter < 10; counter++) {
-            if (value[result_nodes[counter]-INPUT_NODES]) {
+            if (getvalue(result_nodes[counter])) {
                 if(counter == correct) g = 1;
                 cnt++;
             }
@@ -74,7 +74,7 @@ float make_test(AndNot_network &net, ifstream &in) {
     vector<bool> input_values(INPUT_NODES);
     string input_image;
     getline(in, input_image);
-    // cout  << INPUT_NODES << " " << input_image.size() << "\n";
+
     for (int i = 0; i < (int)INPUT_NODES; i++) {
         input_values[i] = (input_image[i] == '1');
     }
@@ -83,7 +83,6 @@ float make_test(AndNot_network &net, ifstream &in) {
 
     net.calculatenetwork();
 
-    //get the correct result and compare
     string correct;
     getline(in, correct);
     return net.guess(correct[0]-'0');
@@ -103,7 +102,7 @@ int main(int argc, char const *argv[]) {
     // test on the test data
     float num = 0;
     for (int i = 0; i < TESTS; i++) {
-        if(i%250 == 0) cout << "Tested " << i << "/" << TESTS << "\n";
+        if(i%500 == 0) cout << "Tested " << i << "/" << TESTS << "\n";
         num += make_test(net, test_input);
     }
     
