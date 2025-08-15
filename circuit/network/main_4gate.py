@@ -28,7 +28,7 @@ import jax, math, functools, optax
 # Use a sigmoid for instance. 
 #
 # Extract images from a standard mnist to get a better idea of which
-# statistics are more important.
+# statistics are more important. 
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
