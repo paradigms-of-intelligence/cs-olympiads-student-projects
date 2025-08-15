@@ -20,6 +20,8 @@ BETA2 = .9999
 BETA1 = .9
 EPSILON = 1e-8
 LEARNING_RATE = 0.002
+
+OUTPUT_SIZE = 0
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
     
@@ -147,8 +149,8 @@ def input_network(left_nodes, right_nodes, prob, aus):
             RIGHT.append(right)
 
         # Initialize output nodes (assumed to be the last N)
-        number_outputs = int(file.readline().strip())
-        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
+        OUTPUT_SIZE = int(file.readline().strip())
+        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-OUTPUT_SIZE+1, NETWORK_SIZE+1)]
 
         # Calculate the layers
         l = [0 for _ in range(0, NETWORK_SIZE+1)]
@@ -248,7 +250,7 @@ def main():
     jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
 
     global BETA1_TIMESTAMP, BETA2_TIMESTAMP, BATCH_SIZE, EPSILON, LEARNING_RATE, INPUT_SIZE, OUTPUT_NODES
-    global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, EPOCH_COUNT
+    global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, EPOCH_COUNT, OUTPUT_SIZE
 
     left_nodes = []
     right_nodes = []
@@ -307,7 +309,7 @@ def main():
                 f.write(str(int(right_nodes[current_layer + 1][i])) + " \n")
 
         f.write("\n");
-        for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
+        for id in OUTPUT_NODES:
             f.write(str(id)+ " ")
 
 
