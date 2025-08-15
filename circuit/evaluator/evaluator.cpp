@@ -3,7 +3,7 @@
 using namespace std;
 
 struct AndNot_network {
-    int N;
+    int N, O;
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
@@ -19,9 +19,10 @@ struct AndNot_network {
             C_1[id] = read_int32_t(graphinput);
             C_2[id] = read_int32_t(graphinput);
         }
-
-        result_nodes.resize(10);
-        for (int i = 0; i < 10; i++) result_nodes[i] = read_int32_t(graphinput);
+         
+        O = read_int32_t(graphinput);
+        result_nodes.resize(O);
+        for (int i = 0; i < O; i++) result_nodes[i] = read_int32_t(graphinput);
 
         graphinput.close();
     }
@@ -56,8 +57,14 @@ struct AndNot_network {
         // return the network's guess for MNIST input
         float g = 0;
         float cnt = 0;
+        int category = O/10; // 10 categories for MNIST
         for (int counter = 0; counter < 10; counter++) {
-            if (getvalue(result_nodes[counter])) {
+            int on = 0;
+            for (int k = 0; k < category; k++) {
+                int id = result_nodes[counter * category + k];
+                if (value[id])  on++;
+            }
+            if (on > category/2) {
                 if(counter == correct) g = 1;
                 cnt++;
             }
