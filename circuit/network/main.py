@@ -4,6 +4,31 @@ import jax, math, functools, optax
 
 #    ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞ
 
+# IDEAS:
+# Instead of mapping connections with randint, try 
+# mapping central pixels more often
+#
+# Instead of having a static input size of 784, try
+# passing other statistics such as density of smaller
+# squares and similar stuff. If you want to give more
+# weight to a statistic, just feed the statistic nodes 
+# to the network multiple times
+#
+# Simulate the first 10 epochs and re-map empty connections
+# in the first layer to other input nodes
+#
+# Convolution sus
+# 
+# Try connecting nodes from earlier layers. For instance, suppose
+# having a 8 layer network. At layer 5 connect the input nodes as 
+# well. This allows the network to build some internal statistics
+# 
+# After computing the activation value, re-map it from [0,1] to 
+# [0,1] but try to squeeze the middle values more to the side.
+# Use a sigmoid for instance. 
+#
+# Extract images from a standard mnist to get a better idea of which
+# statistics are more important.
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
@@ -11,16 +36,16 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 20
-BATCH_SIZE = 100
+EPOCH_COUNT = 1000
+BATCH_SIZE = 1000
 
 # Training constants
 #ALPHA = 0.001
-BETA2 = .9999
+BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.05
-
+LEARNING_RATE = 0.5
+LEARNING_INCREASE = 1.2
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -48,15 +73,15 @@ def inference_function(p, left, right, values):
     + (1 - pr) * p[14]
     + p[15]
     )
-    return sum
+    return 1/(1+jnp.exp(-10*(sum-0.5)))
 
 @jax.jit
 def fitting_function(a):
-    SUS = jnp.array([0.02, 0.5, 0.5, 5, 0.5, 5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.02])    
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
-batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
+# batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 
 @jax.jit
 def inference(prob, left_nodes, right_nodes, values):
@@ -95,7 +120,7 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     '''Vectorize loss_function over the batch and return mean loss.'''
     for i in range(len(prob)):
-        prob[i] = batch_fitting_function(prob[i])
+        # prob[i] = batch_fitting_function(prob[i])
         prob[i] = jax.nn.softmax(prob[i], 1)
 
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
@@ -182,17 +207,15 @@ def train_network(prob, left_nodes, right_nodes):
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
+    optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
+    opt_state = optimizer.init(prob)
+
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
-        print("Epoch " + str(epoch+1))
-
-        # Initialize optimizer
-        optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1, b2=BETA2, eps=EPSILON) 
-        opt_state = optimizer.init(prob)
-
+        LEARNING_RATE *= LEARNING_INCREASE
         # Forward pass
         loss_value = scalar_loss(prob, values, correct_answer, left_nodes, right_nodes)
-        print("Mean value: " + str(loss_value))
+        if epoch % 20 ==0: print("Epoch " + str(epoch+1) + "     Mean value: " + str(loss_value))
 
         # Backward pass
         gradients = jax.grad(scalar_loss)(prob, values, correct_answer, left_nodes, right_nodes)
@@ -210,8 +233,6 @@ def test_network(prob, left_nodes, right_nodes):
     read_values("../data/testdata.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
-
-    batch_fitting_function = jax.vmap(fitting_function, in_axes=(0))
 
     for i in range(len(prob)):
         prob[i] = jax.nn.softmax(prob[i], 1)
