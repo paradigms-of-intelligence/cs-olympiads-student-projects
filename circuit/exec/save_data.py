@@ -33,7 +33,7 @@ def run_test():
     print(f"Output: {output}")
     return float(output.strip())
 
-TEST_COUNT = 1
+TEST_COUNT = 2
 def main():
     label = sys.argv[1]
 

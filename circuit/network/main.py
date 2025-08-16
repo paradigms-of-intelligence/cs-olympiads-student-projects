@@ -34,7 +34,7 @@ NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
-
+TOTAL_SIZE = 3000
 # Training input parameters
 EPOCH_COUNT = 20
 BATCH_SIZE = 300
@@ -119,6 +119,7 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
 @jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     '''Vectorize loss_function over the batch and return mean loss.'''
+
     for i in range(len(prob)):
         prob[i] = batch_fitting_function(prob[i])
         prob[i] = jax.nn.softmax(prob[i], 1)
@@ -178,8 +179,6 @@ def input_network(left_nodes, right_nodes, prob, aus):
 
 
 def read_values(file, values, answers):
-    print("Reading values")       
-
     with open(file, 'r') as file:
         for test_case in range(BATCH_SIZE):
             # read training inputanswer
@@ -194,28 +193,33 @@ def read_values(file, values, answers):
             one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
-    print("Values read")       
+        
+    return [jnp.array(values),jnp.array(answers)]
     
 #@jax.jit
 def train_network(prob, left_nodes, right_nodes):
     global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT
     # Read training data
-    values_list = [[] for _ in range (60000/BATCH_SIZE)]
-    answers_list = [[] for _ in range (60000/BATCH_SIZE)]
-    for i in range (0, 60000/BATCH_SIZE): read_values("../data/training.txt", values_list[i], answers_list[i])
-    values = jnp.array(values_list, dtype=jnp.float32)
-    correct_answer = jnp.array(answers_list, dtype=jnp.float32)
+    values_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
+    answers_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
+
+    print("Reading values")       
+    for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)): 
+        values_list[i],answers_list[i] = read_values("../data/training.txt", values_list[i], answers_list[i])
+    print("Values read")       
+
+    values = values_list
+    correct_answer = answers_list
 
     optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
     opt_state = optimizer.init(prob)
 
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
-        LEARNING_RATE *= LEARNING_INCREASE
         # Forward pass
-        for i in range (0, 60000/BATCH_SIZE):
+        print("Epoch " + str(epoch+1))
+        for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
             loss_value = scalar_loss(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
-            print("Epoch " + str(epoch+1) + "     Mean value: " + str(loss_value))
 
             # Backward pass
             gradients = jax.grad(scalar_loss)(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
