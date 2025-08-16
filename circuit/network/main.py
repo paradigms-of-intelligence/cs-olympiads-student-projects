@@ -36,7 +36,7 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 TOTAL_SIZE = 900
 # Training input parameters
-EPOCH_COUNT = 20
+EPOCH_COUNT = 10
 BATCH_SIZE = 300
 
 # Training constants
@@ -113,8 +113,12 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
     predicted = (jnp.argmax(helper)).astype(jnp.int32)
     correct = jnp.argmax(correct_answer).astype(jnp.int32)
-    if (helper[predicted].astype(jnp.float32) < 0.5): return 0.1
-    return predicted == correct
+    return jax.lax.cond(
+        helper[predicted] < 0.5,
+        lambda _: 0.1,
+        lambda _: (predicted == correct).astype(jnp.float32),
+        operand=None
+    )
 
 @jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
