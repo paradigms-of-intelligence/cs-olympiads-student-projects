@@ -34,7 +34,7 @@ NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
-TOTAL_SIZE = 3000
+TOTAL_SIZE = 900
 # Training input parameters
 EPOCH_COUNT = 20
 BATCH_SIZE = 300
@@ -171,7 +171,7 @@ def input_network(left_nodes, right_nodes, prob, aus):
             for id in x:
                 left.append(LEFT[id])
                 right.append(RIGHT[id])
-                p.append([random.randrange(0, 1) for index in range(16)])
+                p.append([random.uniform(0, 1) for index in range(16)])
 
             left_nodes.append(jnp.array(left))
             right_nodes.append(jnp.array(right))
@@ -219,10 +219,10 @@ def train_network(prob, left_nodes, right_nodes):
         # Forward pass
         print("Epoch " + str(epoch+1))
         for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
-            loss_value = scalar_loss(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
+            loss_value = scalar_loss(prob, values[i], correct_answer[i], left_nodes, right_nodes)
 
             # Backward pass
-            gradients = jax.grad(scalar_loss)(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
+            gradients = jax.grad(scalar_loss)(prob, values[i], correct_answer[i], left_nodes, right_nodes)
             
             # Update parameters
             updates, opt_state = optimizer.update(gradients, opt_state)
