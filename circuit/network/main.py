@@ -200,9 +200,9 @@ def read_values(file, values, answers):
 def train_network(prob, left_nodes, right_nodes):
     global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT
     # Read training data
-    values_list = []
-    answers_list = []
-    read_values("../data/training.txt", values_list, answers_list)
+    values_list = [[] for _ in range (60000/BATCH_SIZE)]
+    answers_list = [[] for _ in range (60000/BATCH_SIZE)]
+    for i in range (0, 60000/BATCH_SIZE): read_values("../data/training.txt", values_list[i], answers_list[i])
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
@@ -213,15 +213,16 @@ def train_network(prob, left_nodes, right_nodes):
     for epoch in range (0, EPOCH_COUNT):
         LEARNING_RATE *= LEARNING_INCREASE
         # Forward pass
-        loss_value = scalar_loss(prob, values, correct_answer, left_nodes, right_nodes)
-        if epoch % 20 ==0: print("Epoch " + str(epoch+1) + "     Mean value: " + str(loss_value))
+        for i in range (0, 60000/BATCH_SIZE):
+            loss_value = scalar_loss(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
+            print("Epoch " + str(epoch+1) + "     Mean value: " + str(loss_value))
 
-        # Backward pass
-        gradients = jax.grad(scalar_loss)(prob, values, correct_answer, left_nodes, right_nodes)
-        
-        # Update parameters
-        updates, opt_state = optimizer.update(gradients, opt_state)
-        prob = optax.apply_updates(prob, updates)
+            # Backward pass
+            gradients = jax.grad(scalar_loss)(prob[i], values[i], correct_answer[i], left_nodes, right_nodes)
+            
+            # Update parameters
+            updates, opt_state = optimizer.update(gradients, opt_state)
+            prob = optax.apply_updates(prob, updates)
     return prob
 
 @jax.jit
