@@ -36,15 +36,15 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 1000
-BATCH_SIZE = 1000
+EPOCH_COUNT = 20
+BATCH_SIZE = 300
 
 # Training constants
 #ALPHA = 0.001
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.5
+LEARNING_RATE = 0.05
 LEARNING_INCREASE = 1.2
 
 # This should be multiplied by BETA1 and BETA2
@@ -81,7 +81,7 @@ def fitting_function(a):
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
-# batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
+batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 
 @jax.jit
 def inference(prob, left_nodes, right_nodes, values):
@@ -110,17 +110,17 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
     # Boolean vector: True where prediction > 0.5
-    helper = inference(prob, left_nodes, right_nodes, values)
-    predicted = int(jnp.argmax(helper))
-    correct = int(jnp.argmax(correct_answer))
-    if (helper[predicted] < 0.5): return 0.1
+    helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
+    predicted = (jnp.argmax(helper)).astype(jnp.int32)
+    correct = jnp.argmax(correct_answer).astype(jnp.int32)
+    if (helper[predicted].astype(jnp.float32) < 0.5): return 0.1
     return predicted == correct
 
 @jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     '''Vectorize loss_function over the batch and return mean loss.'''
     for i in range(len(prob)):
-        # prob[i] = batch_fitting_function(prob[i])
+        prob[i] = batch_fitting_function(prob[i])
         prob[i] = jax.nn.softmax(prob[i], 1)
 
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
@@ -170,8 +170,7 @@ def input_network(left_nodes, right_nodes, prob, aus):
             for id in x:
                 left.append(LEFT[id])
                 right.append(RIGHT[id])
-                p.append([0.1 for index in range(16)])
-                p[-1][3] = 1
+                p.append([random.randrange(0, 1) for index in range(16)])
 
             left_nodes.append(jnp.array(left))
             right_nodes.append(jnp.array(right))
