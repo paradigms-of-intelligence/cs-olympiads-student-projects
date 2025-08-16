@@ -85,16 +85,11 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
     # Boolean vector: True where prediction > 0.5
-    predicted = inference(prob, left_nodes, right_nodes, values) > 0.5
-    cnt = jnp.sum(predicted)
-
-    # Boolean vector: where prediction and correct answer are both 1
-    true_positives = predicted & correct_answer.astype(bool)
-
-    # g = 1 if any true positive exists, else 0
-    g = jnp.any(true_positives).astype(jnp.float32)
-
-    return jnp.where(cnt == 0, 0.1, g / cnt)
+    helper = inference(prob, left_nodes, right_nodes, values)
+    predicted = int(jnp.argmax(helper))
+    correct = int(jnp.argmax(correct_answer))
+    if (helper[predicted] < 0.5): return 0.1
+    return predicted == correct
 
 @jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
@@ -270,27 +265,6 @@ def main():
     # Print the network to binary file
     print_network(aus, prob, left_nodes, right_nodes)
     
-
-    # with open("sus.txt", "w") as f:
-        
-    #     # Write the network size -> 32 bits/ 4 bytes
-    #     for i in range(len(prob)):
-    #             prob[i] = jax.nn.softmax(prob[i], 1)    
-    #     f.write(str(NETWORK_SIZE) + "\n\n")
-    #     for current_layer in range(0, len(aus)):
-    #         for i in range(0, len(aus[current_layer])):
-
-    #             gate_index = int(jnp.argmax(prob[current_layer + 1][i]))
-    #             f.write(str(gate_index) + " ")
-
-    #             f.write(str(int(aus[current_layer][i])) + " ")
-    #             f.write(str(int(left_nodes[current_layer + 1][i]))+ " ")
-    #             f.write(str(int(right_nodes[current_layer + 1][i])) + " \n")
-
-    #     f.write("\n");
-    #     for id in OUTPUT_NODES:
-    #         f.write(str(id)+ " ")
-
 
 if __name__ == "__main__":
     main()
