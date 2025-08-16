@@ -160,8 +160,8 @@ def input_network(left_nodes, right_nodes, prob, aus):
 
 
         # Initialize layers
-        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
-        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
+        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float32))
+        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float32))
         prob.append(jnp.zeros((INPUT_SIZE+1, 16), dtype=jnp.float32))
         for x in aus:
             left = []
