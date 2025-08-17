@@ -58,7 +58,7 @@ struct AndNot_network {
         float g = 0;
         float cnt = 0;
         int category = O/10; // 10 categories for MNIST
-        vector<pair<int, int>> category_ids(category);
+        vector<pair<int, int>> category_ids(10, make_pair(0,0));
         for (int counter = 0; counter < 10; counter++) {
             int on = 0;
             for (int k = 0; k < category; k++) {
@@ -68,6 +68,7 @@ struct AndNot_network {
             category_ids[counter] = {on, counter};
         }
         sort(category_ids.begin(), category_ids.end(), greater<pair<int, int>>());
+        
         int maximum = category_ids[0].first;
         int i = 0;
         while (category_ids[i].first == maximum && i < 10) {

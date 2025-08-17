@@ -4,6 +4,8 @@
 #include<queue>
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
+
 #include "../circuit.h"
 
 #ifndef INT32_MAX
@@ -90,7 +92,10 @@ void toposort_nodes() {
 
         processed_count++;
 
-        if(node_id > (int32_t)INPUT_NODES) toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        if(node_id > (int32_t)INPUT_NODES) 
+        {
+            toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        }
 
         for(int32_t edge : reverse_link[node_id])
         {
@@ -148,6 +153,7 @@ void replace_gates() {
 
                 new_nodes.push_back(Node(0, __id, -clean_gate, -neg_gate));
                 break;
+                
             }
 
             case 7: // OR
@@ -172,7 +178,6 @@ void replace_gates() {
 
             case 9: // XNOR
             {
-
                 int32_t nand_1 = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, __input_b));
 
@@ -187,7 +192,7 @@ void replace_gates() {
 
                 new_nodes.push_back(Node(0, __id, nand_4, nand_4));
 
-                break;
+                break;  
             }
 
             case 10: // !B
@@ -268,7 +273,6 @@ int main(int argc, char const *argv[]) {
         node_value[1] = read_int32_t(t16_ifstream);
         node_value[2] = read_int32_t(t16_ifstream);
         node_value[3] = read_int32_t(t16_ifstream);
-
         if(node_value[0] > 16 || node_value[0] < 0
          || node_value[1] <=(int32_t) INPUT_NODES){
             program_abort(EXIT_INVALID_NODE_DATA);
@@ -277,7 +281,12 @@ int main(int argc, char const *argv[]) {
         input_nodes.push_back(Node(node_value[0], node_value[1], node_value[2], node_value[3]));
     }   
 
-    toposort_nodes();
+    std::sort(input_nodes.begin(), input_nodes.end(), [&](const Node& a, const Node& b)
+    {
+        return a.id < b.id;
+    });
+
+    toposort_nodes();   
 
     replace_gates();
 
@@ -295,7 +304,8 @@ int main(int argc, char const *argv[]) {
     for (int32_t i = first_output_id; i < first_output_id+OUTPUT_NODES; i++) {
         write_int32_t(t2_ofstream, i);
     }
-
+    std::cout << "Last value printed: " << first_output_id+OUTPUT_NODES-1 << "\n";
+    
     t16_ifstream.close();
     t2_ofstream.close();
     return 0;
