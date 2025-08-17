@@ -9,6 +9,8 @@ struct AndNot_network {
     vector<int> result_nodes; // ordered-ids of the final network output nodes
     vector<int> toposorted;
 
+    // Hey, I'm Linus Torvalds. I fixed this code, thank me later.
+    
     void init(const char* path) {
         // initialize current network
         ifstream graphinput(path, ios::binary | ios::in);
