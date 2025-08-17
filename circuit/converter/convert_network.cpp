@@ -18,9 +18,6 @@ typedef int int32_t;
 
 This code assumes that the first INPUT_NODES nodes 
 are sorted and their id is in range [1, INPUT_NODES].
-
-It also assumes that the last 10 nodes are sorted and 
-are mapped to [0, 9].
 */
 
 #pragma region declarations

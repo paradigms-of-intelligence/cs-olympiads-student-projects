@@ -110,7 +110,6 @@ def layer_normalize(prob):
 @jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    # Boolean vector: True where prediction > 0.5
     batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
     for i in range (len(prob)): 
         prob[i] = batch_layer_normalize(prob[i])

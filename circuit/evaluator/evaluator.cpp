@@ -7,6 +7,7 @@ struct AndNot_network {
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
+    vector<int> toposorted;
 
     void init(const char* path) {
         // initialize current network
@@ -15,9 +16,9 @@ struct AndNot_network {
         value.resize(N+1); C_1.resize(N+1); C_2.resize(N+1);
 
         for (int i = INPUT_NODES+1; i <= (int)N; i++) {
-            int id = read_int32_t(graphinput);
-            C_1[id] = read_int32_t(graphinput);
-            C_2[id] = read_int32_t(graphinput);
+            toposorted[i] = read_int32_t(graphinput);
+            C_1[i] = read_int32_t(graphinput);
+            C_2[i] = read_int32_t(graphinput);
         }
          
         O = read_int32_t(graphinput);
@@ -49,7 +50,7 @@ struct AndNot_network {
     void calculatenetwork() {
         // calculate all node values
         for (int i = INPUT_NODES+1; i <= N; i++) {
-            value[i] = getvalue(C_1[i]) & getvalue(C_2[i]);
+            value[toposorted[i]] = getvalue(C_1[i]) & getvalue(C_2[i]);
         }
     }
 
