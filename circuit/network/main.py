@@ -23,9 +23,6 @@ import jax, math, functools, optax
 # having a 8 layer network. At layer 5 connect the input nodes as 
 # well. This allows the network to build some internal statistics
 # 
-# After computing the activation value, re-map it from [0,1] to 
-# [0,1] but try to squeeze the middle values more to the side.
-# Use a sigmoid for instance. 
 #
 # Extract images from a standard mnist to get a better idea of which
 # statistics are more important.
