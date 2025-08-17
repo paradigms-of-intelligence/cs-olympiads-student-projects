@@ -87,7 +87,6 @@ batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 def inference(prob, left_nodes, right_nodes, values):
     global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     start_of_current_layer = INPUT_SIZE+1
-
     # Layer loop
     for c in range(1, len(prob)):
         end_of_current_layer = start_of_current_layer+len(prob[c])
@@ -106,10 +105,19 @@ def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
     return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer)
 
+def layer_normalize(prob):
+    '''Normalize the probabilities to all 0 and a 1'''
+    max_idx = jnp.argmax(prob)
+    return jnp.eye(prob.shape[0])[max_idx]
+
 @jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
     # Boolean vector: True where prediction > 0.5
+    batch_layer_normilize = jax.vmap(layer_normalize, in_axes=(0,))
+    for i in range (len(prob)): 
+        prob[i] = batch_layer_normilize(prob[i], 1)
+
     helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
     predicted = (jnp.argmax(helper)).astype(jnp.int32)
     correct = jnp.argmax(correct_answer).astype(jnp.int32)
@@ -241,9 +249,6 @@ def test_network(prob, left_nodes, right_nodes):
     read_values("../data/testdata.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
-
-    for i in range(len(prob)):
-        prob[i] = jax.nn.softmax(prob[i], 1)
 
     batch_accuracy = jax.vmap(accuracy_function, in_axes=(None, 0, 0, None, None)) 
     acc = batch_accuracy(prob, values, correct_answer, left_nodes, right_nodes)
