@@ -14,6 +14,7 @@ struct AndNot_network {
         ifstream graphinput(path, ios::binary | ios::in);
         N = read_int32_t(graphinput);
         value.resize(N+1); C_1.resize(N+1); C_2.resize(N+1);
+        toposorted.resize(N+1);
 
         for (int i = INPUT_NODES+1; i <= (int)N; i++) {
             toposorted[i] = read_int32_t(graphinput);
