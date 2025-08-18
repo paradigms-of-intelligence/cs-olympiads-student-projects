@@ -43,8 +43,8 @@ BATCH_SIZE = 750
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.03
-LEARNING_INCREASE = 1.05
+LEARNING_RATE = 0.07
+LEARNING_INCREASE = 1.1
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
