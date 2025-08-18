@@ -17,7 +17,7 @@ def main():
     os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
-    os.system("python3 ../generator/convolution.py > ./network_architecture.txt")
+    os.system("python3 ../generator/convolution+custom_distr.py > ./network_architecture.txt")
     logger.debug("Generated")
 
     # # Network
@@ -38,10 +38,10 @@ def main():
     os.system("./evaluate_network ../data/testdata.txt 2gate_trained_network.bin")
     logger.debug("Evaluated")
     
-    #Cleaning the directory
-    logger.debug("Cleaning the workspace")
-    os.system("rm 2gate_trained_network.bin convert_network evaluate_network" 
-              + " network_architecture.txt trained_network.bin")
+    # #Cleaning the directory
+    # logger.debug("Cleaning the workspace")
+    # os.system("rm 2gate_trained_network.bin convert_network evaluate_network" 
+    #           + " network_architecture.txt trained_network.bin")
               
     # Flush all logs before exiting
     logging.shutdown()

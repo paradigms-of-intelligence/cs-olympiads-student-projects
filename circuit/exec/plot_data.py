@@ -1,31 +1,37 @@
 import matplotlib.pyplot as plt
-import numpy as np
 
-def main():
-    labels = []
-    accuracy = []
+def plot_results():
+    # Load the scores
+    labels, scores = [], []
+    with open("plot_data.txt", "r") as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) == 2:
+                labels.append(parts[0])
+                scores.append(float(parts[1]))
 
-    with open("plot_data.txt") as file:
-        for line in file:
-            l, a = line.strip().split()
-            labels.append(l)
-            accuracy.append(float(a))
+    # Plot
+    plt.figure(figsize=(8,5))
+    plt.bar(labels, scores, color="skyblue", edgecolor="black")
 
-    labels = np.array(labels)
-    accuracy = np.array(accuracy)
+    # Fix y-axis from 0 to 100
+    plt.ylim(0, 100)
 
-    # Use index positions for plotting
-    x = np.arange(len(labels))
+    # Horizontal lines
+    if scores:
+        best = max(scores)
+        plt.axhline(best, color="green", linestyle="--", linewidth=1.5, label=f"Best: {best:.2f}%")
 
-    plt.bar(x, accuracy)
-    plt.xticks(x, labels, rotation=45)
-    plt.xlabel("Network type")
-    plt.ylabel("Accuracy [%]")
-    plt.title("Network Accuracy Comparison")
+    
+    plt.xlabel("Experiment")
+    plt.ylabel("Accuracy (%)")
+    plt.title("Network Evaluation Results")
+    plt.legend()
+    plt.grid(axis="y", linestyle=":", alpha=0.7)
+
     plt.tight_layout()
+    plt.savefig("plot.png")
 
-    plt.savefig("plot.png")  # always works
-    # plt.show()  # only if you have GUI
 
 if __name__ == "__main__":
-    main()
+    plot_results()

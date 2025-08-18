@@ -1,4 +1,6 @@
-import random 
+import random, os
+os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"  
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"   # don't grab all GPU memory at startup
 import jax.numpy as jnp
 import jax, math, functools, optax
 
@@ -32,17 +34,17 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 10000
-TOTAL_SIZE = 4000
+EPOCH_COUNT = 300
+TOTAL_SIZE = 30000
 BATCH_SIZE = 500
 
 # Training constants
-#ALPHA = 0.001
 BETA2 = .99
 BETA1 = .9
-EPSILON = 1e-8
-LEARNING_RATE = 0.05
-LEARNING_INCREASE = 1.1
+EPSILON = 1e-5
+LEARNING_RATE = 0.01
+LEARNING_INCREASE = 1.05
+TEMPERATURE = 1
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -74,7 +76,10 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
+    global TEMPERATURE, LEARNING_INCREASE
     SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
+    SUS = SUS + TEMPERATURE
+    TEMPERATURE *= LEARNING_INCREASE
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -83,24 +88,36 @@ batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 @jax.jit
 def inference(prob, left_nodes, right_nodes, values):
     global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
-    start_of_current_layer = INPUT_SIZE+1
+    start_of_current_layer = INPUT_SIZE + 1
+    
+    # Convert values from bool to float.32
+    values = values.astype(jnp.float32)
+
     # Layer loop
     for c in range(1, len(prob)):
-        end_of_current_layer = start_of_current_layer+len(prob[c])
+        end_of_current_layer = start_of_current_layer + len(prob[c])
         aus = layer_inference(prob[c], left_nodes[c], right_nodes[c], values)
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
         start_of_current_layer = end_of_current_layer
     
-    category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
-    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in 
-                OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])
+    # Compute category means (MNIST: 10 classes)
+    category_size = OUTPUT_SIZE // 10
+    outputs = []   # ← correct variable name
+
+    for cat in range(10):
+        node_ids = jnp.array(OUTPUT_NODES[cat * category_size : (cat + 1) * category_size])
+        category_values = values[node_ids]
+        outputs.append(jnp.mean(category_values))
+
+    outputs = jnp.array(outputs, jnp.float32)
 
     return outputs
+
 
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
-    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer)
+    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer.astype(jnp.float32))
 
 def layer_normalize(prob):
     '''Normalize the probabilities to all 0 and a 1'''
@@ -130,7 +147,6 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
     loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
     return jnp.mean(loss)
-
 
 def input_network(left_nodes, right_nodes, prob, aus):
     global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
@@ -182,7 +198,6 @@ def input_network(left_nodes, right_nodes, prob, aus):
             right_nodes.append(jnp.array(right))
             prob.append(jnp.array(p))
 
-
 def read_values(file, values, answers):
     with open(file, 'r') as file:
         for test_case in range(BATCH_SIZE):
@@ -198,8 +213,8 @@ def read_values(file, values, answers):
             one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
-        
-    return [jnp.array(values),jnp.array(answers)]
+    
+    return values, answers
     
 #@jax.jit
 def train_network(prob, left_nodes, right_nodes):
@@ -213,25 +228,38 @@ def train_network(prob, left_nodes, right_nodes):
         values_list[i],answers_list[i] = read_values("../data/training.txt", values_list[i], answers_list[i])
     print("Values read")       
 
-    values = values_list
-    correct_answer = answers_list
 
-    optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
+    optimizer  = optax.adamw(learning_rate=optax.schedules.exponential_decay(
+    init_value=LEARNING_RATE,
+    transition_steps=EPOCH_COUNT,
+    decay_rate=LEARNING_INCREASE
+    )) 
     opt_state = optimizer.init(prob)
+
+
+    values_list = jnp.array(values_list, dtype=jnp.bool)
+    answers_list = jnp.array(answers_list, dtype=jnp.bool)
 
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
         # Forward pass
-        print("Epoch " + str(epoch+1))
+
+        values_list = jax.random.permutation(jax.random.PRNGKey(epoch), values_list)
+        answers_list = jax.random.permutation(jax.random.PRNGKey(epoch), answers_list)
+
+
+        loss_sum = 0
         for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
-            loss_value = scalar_loss(prob, values[i], correct_answer[i], left_nodes, right_nodes)
+            loss_sum  += scalar_loss(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
 
             # Backward pass
-            gradients = jax.grad(scalar_loss)(prob, values[i], correct_answer[i], left_nodes, right_nodes)
+            gradients = jax.grad(scalar_loss)(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
             
             # Update parameters
-            updates, opt_state = optimizer.update(gradients, opt_state)
+            updates, opt_state = optimizer.update(gradients, opt_state, params=prob)
             prob = optax.apply_updates(prob, updates)
+
+        print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
     return prob
 
 @jax.jit
