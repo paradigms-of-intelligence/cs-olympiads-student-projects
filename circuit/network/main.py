@@ -34,9 +34,9 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 1500
+EPOCH_COUNT = 1000
 TOTAL_SIZE = 25000
-BATCH_SIZE = 750
+BATCH_SIZE = 400
 
 # Training constants
 #ALPHA = 0.001
