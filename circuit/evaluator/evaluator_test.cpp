@@ -7,17 +7,21 @@ struct AndNot_network {
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
+    vector<int> toposorted;
 
+    // Hey, I'm Linus Torvalds. I fixed this code, thank me later.
+    
     void init(const char* path) {
         // initialize current network
         ifstream graphinput(path, ios::binary | ios::in);
         N = read_int32_t(graphinput);
         value.resize(N+1); C_1.resize(N+1); C_2.resize(N+1);
+        toposorted.resize(N+1);
 
         for (int i = INPUT_NODES+1; i <= (int)N; i++) {
-            int id = read_int32_t(graphinput);
-            C_1[id] = read_int32_t(graphinput);
-            C_2[id] = read_int32_t(graphinput);
+            toposorted[i] = read_int32_t(graphinput);
+            C_1[i] = read_int32_t(graphinput);
+            C_2[i] = read_int32_t(graphinput);
         }
          
         O = read_int32_t(graphinput);
@@ -49,7 +53,7 @@ struct AndNot_network {
     void calculatenetwork() {
         // calculate all node values
         for (int i = INPUT_NODES+1; i <= N; i++) {
-            value[i] = getvalue(C_1[i]) & getvalue(C_2[i]);
+            value[toposorted[i]] = getvalue(C_1[i]) & getvalue(C_2[i]);
         }
     }
 
@@ -58,7 +62,7 @@ struct AndNot_network {
         float g = 0;
         float cnt = 0;
         int category = O/10; // 10 categories for MNIST
-        vector<pair<int, int>> category_ids(category);
+        vector<pair<int, int>> category_ids(10, make_pair(0,0));
         for (int counter = 0; counter < 10; counter++) {
             int on = 0;
             for (int k = 0; k < category; k++) {
@@ -68,6 +72,7 @@ struct AndNot_network {
             category_ids[counter] = {on, counter};
         }
         sort(category_ids.begin(), category_ids.end(), greater<pair<int, int>>());
+        
         int maximum = category_ids[0].first;
         int i = 0;
         while (category_ids[i].first == maximum && i < 10) {
