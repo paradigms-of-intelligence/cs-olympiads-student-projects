@@ -43,7 +43,7 @@ BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
 LEARNING_RATE = 0.05
-LEARNING_INCREASE = 0.98
+LEARNING_INCREASE = 0.99
 TEMPERATURE = 1
 
 # This should be multiplied by BETA1 and BETA2
@@ -126,12 +126,8 @@ def layer_normalize(prob):
 
 
 @jax.jit
-def during_training_accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
+def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
-    for i in range (len(prob)): 
-        prob[i] = jax.nn.softmax(prob[i])
-
     helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
     predicted = (jnp.argmax(helper)).astype(jnp.int32)
     correct = jnp.argmax(correct_answer).astype(jnp.int32)
@@ -141,10 +137,6 @@ def during_training_accuracy_function(prob, values, correct_answer, left_nodes, 
 @jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
-    for i in range (len(prob)): 
-        prob[i] = batch_layer_normalize(prob[i])
-
     helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
     predicted = (jnp.argmax(helper)).astype(jnp.int32)
     correct = jnp.argmax(correct_answer).astype(jnp.int32)
@@ -240,7 +232,7 @@ def train_network(prob, left_nodes, right_nodes):
     values_testing = jnp.array(values_list_testing, dtype=jnp.float32)
     correct_answer_testing = jnp.array(answers_list_testing, dtype=jnp.float32)
 
-    batch_accuracy_testing = jax.vmap(during_training_accuracy_function, in_axes=(None, 0, 0, None, None)) 
+    batch_accuracy_testing = jax.vmap(accuracy_function, in_axes=(None, 0, 0, None, None)) 
 
 
     # Read training data
@@ -287,6 +279,9 @@ def train_network(prob, left_nodes, right_nodes):
 
         if (epoch + 1) % 10 == 0:
             # Test the network on test data
+            for i in range (len(prob)):
+                prob[i] = batch_fitting_function(prob[i])
+                prob[i] = jax.nn.softmax(prob[i])
             acc = batch_accuracy_testing(prob, values_testing, correct_answer_testing, left_nodes, right_nodes)
             print("Accuracy: " + str(float(jnp.mean(acc))))
     return prob
@@ -299,6 +294,10 @@ def test_network(prob, left_nodes, right_nodes):
     read_values("../data/testdata.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
+
+    batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
+    for i in range (len(prob)): 
+        prob[i] = batch_layer_normalize(prob[i])
 
     batch_accuracy = jax.vmap(accuracy_function, in_axes=(None, 0, 0, None, None)) 
     acc = batch_accuracy(prob, values, correct_answer, left_nodes, right_nodes)
