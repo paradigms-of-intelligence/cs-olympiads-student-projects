@@ -236,10 +236,10 @@ def train_network(prob, left_nodes, right_nodes):
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
         # Forward pass
-    
-        idx = jax.random.permutation(jax.random.PRNGKey(epoch), TOTAL_SIZE)
-        shuffled_values = values_list[idx]
-        shuffled_answers = answers_list[idx]
+
+        values_list = jax.random.permutation(jax.random.PRNGKey(epoch), values_list)
+        answers_list = jax.random.permutation(jax.random.PRNGKey(epoch), answers_list)
+
 
         loss_sum = 0
         for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
