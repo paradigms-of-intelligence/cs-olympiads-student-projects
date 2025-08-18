@@ -229,7 +229,11 @@ def train_network(prob, left_nodes, right_nodes):
     print("Values read")       
 
 
-    optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
+    optimizer  = optax.adamw(learning_rate=optax.schedules.exponential_decay(
+    init_value=LEARNING_RATE,
+    transition_steps=EPOCH_COUNT,
+    decay_rate=LEARNING_INCREASE
+    )) 
     opt_state = optimizer.init(prob)
 
 
@@ -252,7 +256,7 @@ def train_network(prob, left_nodes, right_nodes):
             gradients = jax.grad(scalar_loss)(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
             
             # Update parameters
-            updates, opt_state = optimizer.update(gradients, opt_state)
+            updates, opt_state = optimizer.update(gradients, opt_state, params=prob)
             prob = optax.apply_updates(prob, updates)
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
