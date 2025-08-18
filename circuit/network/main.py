@@ -1,4 +1,6 @@
-import random 
+import random, os
+os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"  
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"   # don't grab all GPU memory at startup
 import jax.numpy as jnp
 import jax, math, functools, optax
 
@@ -32,17 +34,17 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 100
-TOTAL_SIZE = 5000
-BATCH_SIZE = 500
+EPOCH_COUNT = 150
+TOTAL_SIZE = 20000
+BATCH_SIZE = 1000
 
 # Training constants
 #ALPHA = 0.001
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-8
-LEARNING_RATE = 0.05
-LEARNING_INCREASE = 1.05
+LEARNING_RATE = 0.03
+LEARNING_INCREASE = 1.02
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -85,6 +87,9 @@ def inference(prob, left_nodes, right_nodes, values):
     global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     start_of_current_layer = INPUT_SIZE + 1
     
+    # Convert values from bool to float.32
+    values = values.astype(jnp.float32)
+
     # Layer loop
     for c in range(1, len(prob)):
         end_of_current_layer = start_of_current_layer + len(prob[c])
@@ -109,7 +114,7 @@ def inference(prob, left_nodes, right_nodes, values):
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
-    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer)
+    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer.astype(jnp.float32))
 
 def layer_normalize(prob):
     '''Normalize the probabilities to all 0 and a 1'''
@@ -225,16 +230,20 @@ def train_network(prob, left_nodes, right_nodes):
     opt_state = optimizer.init(prob)
 
 
-    values_list = jnp.array(values_list, dtype=jnp.float32)
-    answers_list = jnp.array(answers_list, dtype=jnp.float32)
+    values_list = jnp.array(values_list, dtype=jnp.bool)
+    answers_list = jnp.array(answers_list, dtype=jnp.bool)
 
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
         # Forward pass
-        print("Epoch " + str(epoch+1))
-        
+
+        values_list = jax.random.permutation(jax.random.PRNGKey(epoch), values_list)
+        answers_list = jax.random.permutation(jax.random.PRNGKey(epoch), answers_list)
+
+
+        loss_sum = 0
         for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
-            loss_value = scalar_loss(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
+            loss_sum  += scalar_loss(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
 
             # Backward pass
             gradients = jax.grad(scalar_loss)(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
@@ -242,6 +251,8 @@ def train_network(prob, left_nodes, right_nodes):
             # Update parameters
             updates, opt_state = optimizer.update(gradients, opt_state)
             prob = optax.apply_updates(prob, updates)
+
+        print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
     return prob
 
 @jax.jit
