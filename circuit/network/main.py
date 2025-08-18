@@ -34,7 +34,7 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 150
+EPOCH_COUNT = 130
 TOTAL_SIZE = 60000
 BATCH_SIZE = 300
 
@@ -123,6 +123,20 @@ def layer_normalize(prob):
     '''Normalize the probabilities to all 0 and a 1'''
     max_idx = jnp.argmax(prob)
     return jnp.eye(prob.shape[0])[max_idx]
+
+
+@jax.jit
+def during_training_accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
+    '''Run forward pass and return accuracy between outputs and correct_answer.'''
+    batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
+    for i in range (len(prob)): 
+        prob[i] = jax.nn.softmax(prob[i])
+
+    helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
+    predicted = (jnp.argmax(helper)).astype(jnp.int32)
+    correct = jnp.argmax(correct_answer).astype(jnp.int32)
+    return (predicted == correct).astype(jnp.float32)
+
 
 @jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
@@ -218,7 +232,17 @@ def read_values(file, values, answers):
     
 #@jax.jit
 def train_network(prob, left_nodes, right_nodes):
-    global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT
+    global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT, OUTPUT_NODES, INPUT_SIZE
+    # Initialize for testing
+    values_list_testing = []
+    answers_list_testing = []
+    read_values("../data/testdata.txt", values_list_testing, answers_list_testing)
+    values_testing = jnp.array(values_list_testing, dtype=jnp.float32)
+    correct_answer_testing = jnp.array(answers_list_testing, dtype=jnp.float32)
+
+    batch_accuracy_testing = jax.vmap(during_training_accuracy_function, in_axes=(None, 0, 0, None, None)) 
+
+
     # Read training data
     values_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
     answers_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
@@ -260,6 +284,11 @@ def train_network(prob, left_nodes, right_nodes):
             prob = optax.apply_updates(prob, updates)
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
+
+        if (epoch + 1) % 10 == 0:
+            # Test the network on test data
+            acc = batch_accuracy_testing(prob, values_testing, correct_answer_testing, left_nodes, right_nodes)
+            print("Accuracy: " + str(float(jnp.mean(acc))))
     return prob
 
 @jax.jit
