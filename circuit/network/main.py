@@ -76,6 +76,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
+    global TEMPERATURE, LEARNING_INCREASE
     SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
     SUS = jnp.sum(SUS, jnp.array([TEMPERATURE]*16))
     TEMPERATURE *= LEARNING_INCREASE
