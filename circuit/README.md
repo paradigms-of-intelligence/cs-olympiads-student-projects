@@ -10,6 +10,10 @@
 | `struct Node` | `128` |
 | $\dots$ | $\dots$ |
 | `struct Node` | `128` |
+| `output_node_count` | `32` |
+| `output0` | `32` |
+| `output1` | `32` |
+| $\dots$ | $\dots$ |
 
 **Node** size table:
 
@@ -31,9 +35,10 @@
 | `struct Node` | `96` |
 | $\dots$ | $\dots$ |
 | `struct Node` | `96` |
+| `output_node_count` | `32` |
 | `output0` | `32` |
+| `output1` | `32` |
 | $\dots$ | $\dots$ |
-| `output9` | `32` |
 
 **Node** size table:
 
