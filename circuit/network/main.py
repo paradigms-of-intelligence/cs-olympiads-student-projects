@@ -34,7 +34,7 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 40
+EPOCH_COUNT = 50
 TOTAL_SIZE = 51000
 BATCH_SIZE = 450
 
@@ -42,7 +42,7 @@ BATCH_SIZE = 450
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
-LEARNING_RATE = 0.06
+LEARNING_RATE = 0.07
 LEARNING_INCREASE = 1
 TEMPERATURE = 1
 
@@ -277,7 +277,7 @@ def train_network(prob, left_nodes, right_nodes):
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
 
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 20 == 0:
             # Test the network on test data
             for i in range (len(prob)):
                 prob[i] = batch_fitting_function(prob[i])
