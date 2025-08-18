@@ -36,14 +36,14 @@ OUTPUT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 100
 TOTAL_SIZE = 30000
-BATCH_SIZE = 500
+BATCH_SIZE = 300
 
 # Training constants
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
-LEARNING_RATE = 0.01
-LEARNING_INCREASE = 1.01
+LEARNING_RATE = 0.05
+LEARNING_INCREASE = 0.98
 TEMPERATURE = 1
 
 # This should be multiplied by BETA1 and BETA2
