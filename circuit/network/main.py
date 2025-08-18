@@ -42,7 +42,7 @@ BATCH_SIZE = 450
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
-LEARNING_RATE = 0.07
+LEARNING_RATE = 0.06
 LEARNING_INCREASE = 1
 TEMPERATURE = 1
 
@@ -245,11 +245,7 @@ def train_network(prob, left_nodes, right_nodes):
     print("Values read")       
 
 
-    optimizer  = optax.adamw(learning_rate=optax.schedules.exponential_decay(
-    init_value=LEARNING_RATE,
-    transition_steps=EPOCH_COUNT,
-    decay_rate=LEARNING_INCREASE
-    )) 
+    optimizer  = optax.adamw(LEARNING_RATE) 
     opt_state = optimizer.init(prob)
 
 
