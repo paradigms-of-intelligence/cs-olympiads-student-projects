@@ -32,8 +32,8 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 10000
-TOTAL_SIZE = 4000
+EPOCH_COUNT = 100
+TOTAL_SIZE = 5000
 BATCH_SIZE = 500
 
 # Training constants
@@ -42,7 +42,7 @@ BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-8
 LEARNING_RATE = 0.05
-LEARNING_INCREASE = 1.1
+LEARNING_INCREASE = 1.05
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -83,19 +83,28 @@ batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 @jax.jit
 def inference(prob, left_nodes, right_nodes, values):
     global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
-    start_of_current_layer = INPUT_SIZE+1
+    start_of_current_layer = INPUT_SIZE + 1
+    
     # Layer loop
     for c in range(1, len(prob)):
-        end_of_current_layer = start_of_current_layer+len(prob[c])
+        end_of_current_layer = start_of_current_layer + len(prob[c])
         aus = layer_inference(prob[c], left_nodes[c], right_nodes[c], values)
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
         start_of_current_layer = end_of_current_layer
     
-    category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
-    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in 
-                OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])
+    # Compute category means (MNIST: 10 classes)
+    category_size = OUTPUT_SIZE // 10
+    outputs = []   # ← correct variable name
+
+    for cat in range(10):
+        node_ids = jnp.array(OUTPUT_NODES[cat * category_size : (cat + 1) * category_size])
+        category_values = values[node_ids]
+        outputs.append(jnp.mean(category_values))
+
+    outputs = jnp.array(outputs)
 
     return outputs
+
 
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
@@ -130,7 +139,6 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
     loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
     return jnp.mean(loss)
-
 
 def input_network(left_nodes, right_nodes, prob, aus):
     global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
@@ -182,7 +190,6 @@ def input_network(left_nodes, right_nodes, prob, aus):
             right_nodes.append(jnp.array(right))
             prob.append(jnp.array(p))
 
-
 def read_values(file, values, answers):
     with open(file, 'r') as file:
         for test_case in range(BATCH_SIZE):
@@ -198,8 +205,8 @@ def read_values(file, values, answers):
             one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
-        
-    return [jnp.array(values),jnp.array(answers)]
+    
+    return values, answers
     
 #@jax.jit
 def train_network(prob, left_nodes, right_nodes):
@@ -213,21 +220,24 @@ def train_network(prob, left_nodes, right_nodes):
         values_list[i],answers_list[i] = read_values("../data/training.txt", values_list[i], answers_list[i])
     print("Values read")       
 
-    values = values_list
-    correct_answer = answers_list
 
     optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
     opt_state = optimizer.init(prob)
+
+
+    values_list = jnp.array(values_list, dtype=jnp.float32)
+    answers_list = jnp.array(answers_list, dtype=jnp.float32)
 
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
         # Forward pass
         print("Epoch " + str(epoch+1))
+        
         for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
-            loss_value = scalar_loss(prob, values[i], correct_answer[i], left_nodes, right_nodes)
+            loss_value = scalar_loss(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
 
             # Backward pass
-            gradients = jax.grad(scalar_loss)(prob, values[i], correct_answer[i], left_nodes, right_nodes)
+            gradients = jax.grad(scalar_loss)(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
             
             # Update parameters
             updates, opt_state = optimizer.update(gradients, opt_state)
