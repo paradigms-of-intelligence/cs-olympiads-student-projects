@@ -32,7 +32,7 @@ with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
             plt.show()
         for row in image:
             for p in row:
-                output.append("0" if p < 64 else "1")
+                output.append("0" if p < 150 else "1")
         output.append(f"\n{buf[0]}\n")
         idd += 1
         if(idd%100 == 0): print(f"Zero: {idd}")
