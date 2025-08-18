@@ -35,7 +35,7 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 1000
-TOTAL_SIZE = 25000
+TOTAL_SIZE = 30000
 BATCH_SIZE = 500
 
 # Training constants
@@ -44,6 +44,7 @@ BETA1 = .9
 EPSILON = 1e-5
 LEARNING_RATE = 0.01
 LEARNING_INCREASE = 1.05
+TEMPERATURE = 1
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -76,6 +77,8 @@ def inference_function(p, left, right, values):
 @jax.jit
 def fitting_function(a):
     SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
+    SUS = jnp.sum(SUS, jnp.array([TEMPERATURE]*16))
+    TEMPERATURE *= LEARNING_INCREASE
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -87,7 +90,7 @@ def inference(prob, left_nodes, right_nodes, values):
     start_of_current_layer = INPUT_SIZE + 1
     
     # Convert values from bool to float.32
-    values = values.astype(jnp.float16)
+    values = values.astype(jnp.float32)
 
     # Layer loop
     for c in range(1, len(prob)):
@@ -105,7 +108,7 @@ def inference(prob, left_nodes, right_nodes, values):
         category_values = values[node_ids]
         outputs.append(jnp.mean(category_values))
 
-    outputs = jnp.array(outputs, jnp.float16)
+    outputs = jnp.array(outputs, jnp.float32)
 
     return outputs
 
@@ -113,7 +116,7 @@ def inference(prob, left_nodes, right_nodes, values):
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
-    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer.astype(jnp.float16))
+    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer.astype(jnp.float32))
 
 def layer_normalize(prob):
     '''Normalize the probabilities to all 0 and a 1'''
@@ -130,7 +133,7 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
     predicted = (jnp.argmax(helper)).astype(jnp.int32)
     correct = jnp.argmax(correct_answer).astype(jnp.int32)
-    return (predicted == correct).astype(jnp.float16)
+    return (predicted == correct).astype(jnp.float32)
 
 @jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
@@ -178,9 +181,9 @@ def input_network(left_nodes, right_nodes, prob, aus):
 
 
         # Initialize layers
-        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float16))
-        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float16))
-        prob.append(jnp.zeros((INPUT_SIZE+1, 16), dtype=jnp.float16))
+        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float32))
+        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.float32))
+        prob.append(jnp.zeros((INPUT_SIZE+1, 16), dtype=jnp.float32))
         for x in aus:
             left = []
             right = []
@@ -260,8 +263,8 @@ def test_network(prob, left_nodes, right_nodes):
     values_list = []
     answers_list = []
     read_values("../data/testdata.txt", values_list, answers_list)
-    values = jnp.array(values_list, dtype=jnp.float16)
-    correct_answer = jnp.array(answers_list, dtype=jnp.float16)
+    values = jnp.array(values_list, dtype=jnp.float32)
+    correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
     batch_accuracy = jax.vmap(accuracy_function, in_axes=(None, 0, 0, None, None)) 
     acc = batch_accuracy(prob, values, correct_answer, left_nodes, right_nodes)
