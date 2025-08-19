@@ -278,7 +278,7 @@ def train_network(prob, left_nodes, right_nodes):
 
         
         if (epoch + 1) % 20 == 0:
-            prob_testing  = jax.tree_util.tree_map(lambda x: jnp.copy(x), prob)
+            prob_testing  = [[] for _ in range(len(prob))]
             # Test the network on test data
             for i in range (len(prob)):
                 prob_testing[i] = jax.nn.softmax(prob[i])
