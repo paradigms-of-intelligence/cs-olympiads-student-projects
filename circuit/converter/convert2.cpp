@@ -12,8 +12,6 @@
 
 typedef int int32_t;
 
-int NUMBER_OF_INPUT_NODES = 2;
-
 int get_int(std::ifstream &in) {
     int32_t eingabe;
     // in.read(reinterpret_cast<char*>(&eingabe), sizeof(int32_t));
@@ -33,6 +31,8 @@ struct Node {
     Node() : Node(-1) {};
 };
 
+int NUMBER_OF_INPUT_NODES = 2;
+
 int main() {
     // std::ios::binary
     std::ifstream in("input.txt");
@@ -40,10 +40,11 @@ int main() {
 
     int32_t node_count_input = get_int(in);
 
-    std::vector<Node> return_nodes(node_count_input);
+    std::vector<Node> return_nodes(NUMBER_OF_INPUT_NODES);
 
     for (int i = 0; i < NUMBER_OF_INPUT_NODES; ++i) {
         return_nodes[i] = {(i + 1) * 2};
+        node_mapper[i] = (i + 1) * 2;
     }
 
     for (int i = NUMBER_OF_INPUT_NODES; i < node_count_input; ++i) {
@@ -55,13 +56,13 @@ int main() {
         left = (left < 0 ? -2 * left : 2 * left);
         right = (right < 0 ? -2 * right : 2 * right);
 
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2 + 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2 + 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2 + 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2 + 2);
 
-        return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 4)].id ^ (type && 1), return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 1) && 1), (int)return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 2) && 1), return_nodes[((int)return_nodes.size() - 2)].id ^ ((type >> 3) && 1), (int)return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 4)].id ^ (type && 1), return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 1) && 1), (int)return_nodes.size() * 2 + 2);
+        return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 2) && 1), return_nodes[((int)return_nodes.size() - 2)].id ^ ((type >> 3) && 1), (int)return_nodes.size() * 2 + 2);
         return_nodes[id - 1] = {return_nodes[((int)return_nodes.size() - 2)].id ^ 1, return_nodes[((int)return_nodes.size() - 1)].id ^ 1, id * 2 + 1};
     }
 
@@ -79,6 +80,6 @@ int main() {
     }
 
     for (int i = 0; i < num_output_nodes; ++i) {
-        out << return_nodes[get_int(in)].id;
+        out << return_nodes[get_int(in)].id << "\n";
     }
 }
