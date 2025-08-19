@@ -41,6 +41,7 @@ int main() {
     int32_t node_count_input = get_int(in);
 
     std::vector<Node> return_nodes(NUMBER_OF_INPUT_NODES);
+    std::vector<int> node_mapper(node_count_input);
 
     for (int i = 0; i < NUMBER_OF_INPUT_NODES; ++i) {
         return_nodes[i] = {(i + 1) * 2};
