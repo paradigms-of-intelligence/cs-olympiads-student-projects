@@ -25,11 +25,11 @@ def extract_features(img_flat, TOL):
     for c in range(size):
         stats.append(sum(img[r][c] for r in range(size)))
 
-    # 3. Centro di massa
+    # 3. Centro di massa (convertito in intero)
     coords = [(r, c) for r in range(size) for c in range(size) if img[r][c] == 1]
     if coords:
-        mean_r = sum(r for r, _ in coords) / len(coords)
-        mean_c = sum(c for _, c in coords) / len(coords)
+        mean_r = int(round(sum(r for r, _ in coords) / len(coords)))
+        mean_c = int(round(sum(c for _, c in coords) / len(coords)))
     else:
         mean_r = mean_c = 0
     stats.extend([mean_r, mean_c])
@@ -48,14 +48,14 @@ def extract_features(img_flat, TOL):
     total_on = sum(sum(row) for row in img)
     stats.append(total_on)
 
-    # 6. Simmetria orizzontale e verticale
+    # 6. Simmetria orizzontale e verticale (convertita in 0/1)
     left = sum(img[r][c] for r in range(size) for c in range(size//2))
     right = sum(img[r][c] for r in range(size) for c in range(size//2, size))
-    sym_h = 1 - abs(left - right) / (total_on + 1e-9)
+    sym_h = 1 if abs(left - right) < 1e-5 else 0
 
     top = sum(img[r][c] for r in range(size//2) for c in range(size))
     bottom = sum(img[r][c] for r in range(size//2, size) for c in range(size))
-    sym_v = 1 - abs(top - bottom) / (total_on + 1e-9)
+    sym_v = 1 if abs(top - bottom) < 1e-5 else 0
 
     stats.extend([sym_h, sym_v])
 
