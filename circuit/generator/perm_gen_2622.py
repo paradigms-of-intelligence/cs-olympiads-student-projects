@@ -1,16 +1,25 @@
 from random import *
 
-INPUT_NODES = 784
-OUTPUT_NODES = 1000
+# dimensioni corrette per MNIST con feature estese
+PIXEL_INPUT = 784
+EXTRA_FEATURES = 729 + 625 + 484  # 1838
+INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
 
-LAYERS = [INPUT_NODES, 3000, 2000, OUTPUT_NODES]
+OUTPUT_NODES = 1000
+LAYERS = [INPUT_NODES, 1500, 1000, OUTPUT_NODES]
 
 
 def id_to_pos(node):
-    return (node//28, node%28)
+    """Mappa i primi 784 nodi (pixel) a coordinate 28x28.
+       I nodi extra non hanno posizione."""
+    if node < PIXEL_INPUT:
+        return (node // 28, node % 28)
+    return None  # feature extra
+
 
 def comp_prob(x, y):
     return pow((min(x, 28-x) + min(y, 28-y)), 3)
+
 
 def main():
     print(sum(LAYERS))
@@ -18,21 +27,25 @@ def main():
 
     for layer in range(1, len(LAYERS)):
         prev_size = LAYERS[layer-1]
-        next_size = LAYERS[layer] # SUS SUS SUS SUS SUS SUS SUS SUS TRIBUTO GORMITA SUS SUS SUS SUS
-        nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
+        next_size = LAYERS[layer]
 
+        nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
 
         while len(nl) < next_size:
             nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
         shuffle(nl)
 
-        
         nr = []
         if layer == 1:
             prob = []
             for node in range(first_layer_node, first_layer_node + prev_size):
-                x, y = id_to_pos(node - 1)   # subtract 1 if your node indexing starts at 1
-                prob.append(comp_prob(x, y))
+                pos = id_to_pos(node - 1)  # node-1 perché parte da 1
+                if pos is None:
+                    p = 1.0  # feature extra → probabilità uniforme
+                else:
+                    x, y = pos
+                    p = comp_prob(x, y)
+                prob.append(p)
 
             _sum = sum(prob)
             prob = [p/_sum for p in prob]
@@ -48,7 +61,7 @@ def main():
             nr = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
             first_layer_node += prev_size
 
-        for [l,r] in zip(nl,nr):
+        for l, r in zip(nl, nr):
             print(str(l) + " " + str(r))
 
     print(OUTPUT_NODES)

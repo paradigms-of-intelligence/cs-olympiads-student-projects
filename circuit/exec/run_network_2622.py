@@ -22,7 +22,7 @@ def main():
 
     # # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main.py") #prints a trained_network.bin
+    os.system("python3 ../network/main_sus.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # # Converter
@@ -45,6 +45,7 @@ def main():
               
     # Flush all logs before exiting
     logging.shutdown()
+
 
 if __name__ == "__main__":
     main()

@@ -31,19 +31,19 @@ import jax, math, functools, optax
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
-INPUT_SIZE = 784
+INPUT_SIZE = 2622
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 55
-TOTAL_SIZE = 7400
+EPOCH_COUNT = 100
+TOTAL_SIZE = 5000
 BATCH_SIZE = 200
 
 # Training constants
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
-LEARNING_RATE = 0.04
-LEARNING_INCREASE = 1
+LEARNING_RATE = 0.07
+LEARNING_INCREASE = 1.05
 TEMPERATURE = 1
 
 # This should be multiplied by BETA1 and BETA2
@@ -76,6 +76,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
+    return a
     global TEMPERATURE, LEARNING_INCREASE
     SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
     SUS = SUS + TEMPERATURE
@@ -84,6 +85,7 @@ def fitting_function(a):
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
 batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
+
 
 @jax.jit
 def inference(prob, left_nodes, right_nodes, values):
@@ -246,7 +248,7 @@ def train_network(prob, left_nodes, right_nodes):
 
     print("Reading values")       
     for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)): 
-        values_list[i],answers_list[i] = read_values("../data/training.txt", values_list[i], answers_list[i])
+        values_list[i],answers_list[i] = read_values("../data/training_opt.txt", values_list[i], answers_list[i])
     print("Values read")       
 
 
@@ -293,7 +295,7 @@ def test_network(prob, left_nodes, right_nodes):
     global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
     values_list = []
     answers_list = []
-    read_values("../data/testdata.txt", values_list, answers_list)
+    read_values("../data/testdata_opt.txt", values_list, answers_list)
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
