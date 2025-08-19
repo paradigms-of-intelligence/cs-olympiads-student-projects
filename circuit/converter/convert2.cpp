@@ -55,10 +55,10 @@ int main() {
         left = (left < 0 ? -2 * left : 2 * left);
         right = (right < 0 ? -2 * right : 2 * right);
 
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id, return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id, return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id ^ 1, return_nodes.size() * 2);
-        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id ^ 1, return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id, (int)return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2);
+        return_nodes.emplace_back(return_nodes[left / 2 - 1].id ^ 1, return_nodes[right / 2 - 1].id ^ 1, (int)return_nodes.size() * 2);
 
         return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 4)].id ^ (type && 1), return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 1) && 1), (int)return_nodes.size() * 2);
         return_nodes.emplace_back(return_nodes[((int)return_nodes.size() - 3)].id ^ ((type >> 2) && 1), return_nodes[((int)return_nodes.size() - 2)].id ^ ((type >> 3) && 1), (int)return_nodes.size() * 2);
