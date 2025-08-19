@@ -18,7 +18,7 @@ def main():
     os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
-    os.system("../generator/a.out > ./network_architecture.txt")
+    os.system("g++ ../generator/supreme_generator.cpp -o ../generator/generator && ../generator/generator > ./network_architecture.txt")
     logger.debug("Generated")
 
     # # Network

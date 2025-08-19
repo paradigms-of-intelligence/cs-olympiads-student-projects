@@ -35,8 +35,8 @@ INPUT_SIZE = 784
 OUTPUT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 55
-TOTAL_SIZE = 54000
-BATCH_SIZE = 450
+TOTAL_SIZE = 7400
+BATCH_SIZE = 200
 
 # Training constants
 BETA2 = .99
@@ -185,7 +185,7 @@ def input_network(left_nodes, right_nodes, prob, aus):
                 att+=1
                 aus.append([])
             aus[cl].append(id)
-            l[id] = cl
+            l[id] = cl+1
 
 
         # Initialize layers
