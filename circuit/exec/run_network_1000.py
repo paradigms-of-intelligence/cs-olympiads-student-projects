@@ -46,6 +46,5 @@ def main():
     # Flush all logs before exiting
     logging.shutdown()
 
-
 if __name__ == "__main__":
     main()
