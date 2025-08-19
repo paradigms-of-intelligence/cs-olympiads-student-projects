@@ -2,13 +2,8 @@
 #include "../circuit.h"
 using namespace std;
 
-<<<<<<< HEAD
-struct AndNot_network { 
-    int N;
-=======
 struct AndNot_network {
     int N, O;
->>>>>>> 49fcfed80ab98d95ce058043fecd42d481033c80
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
