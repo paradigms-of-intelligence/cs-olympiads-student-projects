@@ -17,7 +17,7 @@ def main():
     os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
-    os.system("python3 ../generator/perm_gen_2622.py > ./network_architecture.txt")
+    os.system("python3 ../generator/convolution+custom_distr.py > ./network_architecture.txt")
     logger.debug("Generated")
 
     # # Network

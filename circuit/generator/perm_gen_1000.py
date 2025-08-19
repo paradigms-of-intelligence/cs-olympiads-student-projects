@@ -3,7 +3,7 @@ from random import *
 INPUT_NODES = 784
 OUTPUT_NODES = 1000
 
-LAYERS = [INPUT_NODES, 3000, 2000, OUTPUT_NODES]
+LAYERS = [INPUT_NODES, 3000, 5000, 3000, 2000, OUTPUT_NODES]
 
 
 def id_to_pos(node):
@@ -15,6 +15,8 @@ def comp_prob(x, y):
 def main():
     print(sum(LAYERS))
     first_layer_node = 1
+
+    seed(0)
 
     for layer in range(1, len(LAYERS)):
         prev_size = LAYERS[layer-1]

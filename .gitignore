@@ -13,6 +13,8 @@
 *.blg
 *.fdb_latexmk
 *.synctex.gz
+*.npy
+
 .*/ 
 vgcore.*
 
