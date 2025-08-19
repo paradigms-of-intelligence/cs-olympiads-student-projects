@@ -7,7 +7,6 @@ def cleanup():
     pass
 
 def main():
-
     coloredlogs.install(
     level='DEBUG',
     fmt='%(asctime)s.%(msecs)03d %(hostname)s %(name)s[%(process)d] %(levelname)s %(message)s',
@@ -18,12 +17,12 @@ def main():
     os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
-    os.system("../generator/a.out > ./network_architecture.txt")
+    os.system("g++ ../generator/supreme_generator.cpp -o ../generator/generator && ../generator/generator > ./network_architecture.txt")
     logger.debug("Generated")
 
     # # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main.py") #prints a trained_network.bin
+    os.system("python3 ../network/main_deep.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # # Converter
@@ -39,14 +38,13 @@ def main():
     os.system("./evaluate_network ../data/testdata.txt 2gate_trained_network.bin")
     logger.debug("Evaluated")
     
-    #Cleaning the directory
-    logger.debug("Cleaning the workspace")
-    os.system("rm 2gate_trained_network.bin convert_network evaluate_network" 
-              + " network_architecture.txt trained_network.bin")
-    
+    # #Cleaning the directory
+    # logger.debug("Cleaning the workspace")
+    # os.system("rm 2gate_trained_network.bin convert_network evaluate_network" 
+    #           + " network_architecture.txt trained_network.bin")
+              
     # Flush all logs before exiting
     logging.shutdown()
-
 
 if __name__ == "__main__":
     main()

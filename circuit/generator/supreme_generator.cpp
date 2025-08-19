@@ -2,13 +2,14 @@
 #include <algorithm>
 #include <map>
 #include <random>
+#include <utility>
 #include <vector>
 #include <array>
 
 
 constexpr int INPUT_NODES = 784, OUTPUT_NODES = 1000;
 int id = INPUT_NODES;
-std::array<int, 3> layers = {4000, 3000, OUTPUT_NODES};
+std::array<int, 4> layers = {5000, 3000, 1700, OUTPUT_NODES};
 std::vector<std::pair<int, int>> edges;
 
 std::map<int, std::map<int, int>> somemap;
@@ -25,17 +26,15 @@ int ID(int x, int y) {
   return 1+x+28*y;
 }
 
-
-
 int main() {
   std::random_device dev;
   std::mt19937 rng(dev());
   std::vector<int> final;
+  int test = 0;
   for(int x = 0; x < 25; ++x) {
-    if(x == 1 || x == 21) x += 3;
   for(int y = 0; y < 25; ++y) {
-      if(y == 1 || y == 21) y += 3;
-    int nodes[] = {
+      ++test;
+     int nodes[] = {
       getnode(ID(x, y), ID(x+1, y+1)), getnode(ID(x+1, y), ID(x, y+1)), getnode(ID(x+2, y), ID(x+3, y+1)), getnode(ID(x+3, y), ID(x+2, y+1)),
       getnode(ID(x, y+2), ID(x+1, y+3)), getnode(ID(x+1, y+2), ID(x, y+3)), getnode(ID(x+2, y+2), ID(x+3, y+3)), getnode(ID(x+3, y+2), ID(x+2, y+3))
     };
@@ -49,6 +48,7 @@ int main() {
       final.push_back(getnode(getnode(newnodes[4*i], newnodes[4*i+1]), getnode(newnodes[4*i+2], newnodes[4*i+3])));
     }
   }}
+  std::cerr << test << ' ' << final.size() << ' ' << id << std::endl;
   for(int i = 0; i < layers.size(); ++i) {
     std::vector<int> nl = final, nr;
     std::shuffle(nl.begin(), nl.end(), rng);

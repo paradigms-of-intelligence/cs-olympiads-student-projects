@@ -42,7 +42,7 @@ BATCH_SIZE = 200
 BETA2 = .99
 BETA1 = .9
 EPSILON = 1e-5
-LEARNING_RATE = 0.04
+LEARNING_RATE = 0.02
 LEARNING_INCREASE = 1
 TEMPERATURE = 1
 
@@ -72,12 +72,12 @@ def inference_function(p, left, right, values):
     + (1 - pr) * p[14]
     + p[15]
     )
-    return 1/(1+jnp.exp(-10*(sum-0.5)))
+    return 1/(1+jnp.exp(-8*(sum-0.5)))
 
 @jax.jit
 def fitting_function(a):
     global TEMPERATURE, LEARNING_INCREASE
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.15, 0.1, 0.15, 0.3, 0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.08])    
     SUS = SUS + TEMPERATURE
     TEMPERATURE *= LEARNING_INCREASE
     return jnp.multiply(a, SUS)
@@ -276,14 +276,13 @@ def train_network(prob, left_nodes, right_nodes):
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
 
-        
-        if (epoch + 1) % 20 == 0:
-            prob_testing  = jax.tree_util.tree_map(lambda x: jnp.copy(x), prob)
-            # Test the network on test data
-            for i in range (len(prob)):
-                prob_testing[i] = jax.nn.softmax(prob[i])
-            acc = batch_accuracy_testing(prob_testing, values_testing, correct_answer_testing, left_nodes, right_nodes)
-            print("Accuracy: " + str(float(jnp.mean(acc))))
+    #     if (epoch + 1) % 20 == 0:
+    #         # Test the network on test data
+    #         for i in range (len(prob)):
+    #             prob[i] = batch_fitting_function(prob[i])
+    #             prob[i] = jax.nn.softmax(prob[i])
+    #         acc = batch_accuracy_testing(prob, values_testing, correct_answer_testing, left_nodes, right_nodes)
+    #         print("Accuracy: " + str(float(jnp.mean(acc))))
     return prob
 
 @jax.jit
