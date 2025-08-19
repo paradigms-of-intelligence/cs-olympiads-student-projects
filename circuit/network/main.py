@@ -124,6 +124,8 @@ def layer_normalize(prob):
     max_idx = jnp.argmax(prob)
     return jnp.eye(prob.shape[0])[max_idx]
 
+batch_layer_normalize = jax.jit(jax.vmap(layer_normalize, in_axes=(0,)))
+
 
 @jax.jit
 def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
@@ -281,7 +283,7 @@ def train_network(prob, left_nodes, right_nodes):
             prob_testing  = [[] for _ in range(len(prob))]
             # Test the network on test data
             for i in range (len(prob)):
-                prob_testing[i] = jax.nn.softmax(prob[i])
+                prob_testing[i] = batch_layer_normalize(prob[i])
             acc = batch_accuracy_testing(prob_testing, values_testing, correct_answer_testing, left_nodes, right_nodes)
             print("Accuracy: " + str(float(jnp.mean(acc))))
     return prob
@@ -295,7 +297,6 @@ def test_network(prob, left_nodes, right_nodes):
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
-    batch_layer_normalize = jax.vmap(layer_normalize, in_axes=(0,))
     for i in range (len(prob)): 
         prob[i] = batch_layer_normalize(prob[i])
 
