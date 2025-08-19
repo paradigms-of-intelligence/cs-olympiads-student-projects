@@ -37,15 +37,15 @@ jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
-INPUT_SIZE = 2622
+INPUT_SIZE = 2882
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 100
+EPOCH_COUNT = 150
 TOTAL_SIZE = 60000
-BATCH_SIZE = 750
+BATCH_SIZE = 1000
 
 # Training constants
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.03
 WEIGHT_DECAY = 0.005
 MAX_TEMPERATURE = 3
 
