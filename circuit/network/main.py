@@ -276,13 +276,14 @@ def train_network(prob, left_nodes, right_nodes):
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
 
-    #     if (epoch + 1) % 20 == 0:
-    #         # Test the network on test data
-    #         for i in range (len(prob)):
-    #             prob[i] = batch_fitting_function(prob[i])
-    #             prob[i] = jax.nn.softmax(prob[i])
-    #         acc = batch_accuracy_testing(prob, values_testing, correct_answer_testing, left_nodes, right_nodes)
-    #         print("Accuracy: " + str(float(jnp.mean(acc))))
+        
+        if (epoch + 1) % 20 == 0:
+            prob_testing  = jax.tree_util.tree_map(lambda x: jnp.copy(x), prob)
+            # Test the network on test data
+            for i in range (len(prob)):
+                prob_testing[i] = jax.nn.softmax(prob[i])
+            acc = batch_accuracy_testing(prob_testing, values_testing, correct_answer_testing, left_nodes, right_nodes)
+            print("Accuracy: " + str(float(jnp.mean(acc))))
     return prob
 
 @jax.jit
