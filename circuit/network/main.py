@@ -180,11 +180,12 @@ def input_network(left_nodes, right_nodes, prob, aus):
         l = [0 for _ in range(0, NETWORK_SIZE+1)]
         att = 0
         for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-            if l[LEFT[id]] == att or l[RIGHT[id]] == att: 
+            cl = max(l[LEFT[id]], l[RIGHT[id]])
+            if cl >= att: 
                 att+=1
                 aus.append([])
-            aus[-1].append(id)
-            l[id] = att
+            aus[cl].append(id)
+            l[id] = cl
 
 
         # Initialize layers
@@ -203,6 +204,8 @@ def input_network(left_nodes, right_nodes, prob, aus):
             left_nodes.append(jnp.array(left))
             right_nodes.append(jnp.array(right))
             prob.append(jnp.array(p))
+        
+    print(len(aus))
 
 def read_values(file, values, answers):
     with open(file, 'r') as file:
