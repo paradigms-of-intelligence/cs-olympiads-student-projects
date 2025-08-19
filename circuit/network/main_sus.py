@@ -145,16 +145,31 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     return (predicted == correct).astype(jnp.float32)
 
 @jax.jit
-def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes, temperature):
-    '''Vectorize loss_function over the batch and return mean loss.'''
+def scalar_loss(prob, batch_values, batch_correct, left_nodes, right_nodes, temperature):
+    # prob: list/tuple of layer arrays
+    # batch_values: shape (BATCH_SIZE, INPUT_SIZE)
+    # batch_correct: shape (BATCH_SIZE, num_classes)
 
-    for i in range(len(prob)):
-        prob[i] = batch_fitting_function(prob[i]) * temperature
-        prob[i] = jax.nn.softmax(prob[i], 1)
+    # --- 1) Normalize / softmax the layer probs without mutating prob in-place ---
+    # build a new tuple/list of normalized probs
+    norm_prob = []
+    for p in prob:
+        p2 = batch_fitting_function(p) * temperature    # keeps p2 same shape as p
+        p2 = jax.nn.softmax(p2, axis=1)
+        norm_prob.append(p2)
+    # convert to tuple so it's immutable
+    norm_prob = tuple(norm_prob)
 
-    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
-    loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
-    return jnp.mean(loss)
+    # --- 2) Batched inference: vectorize inference over axis 0 of batch_values ---
+    # inference currently expects a single input vector (shape (INPUT_SIZE,))
+    batched_inference = jax.vmap(lambda v: inference(norm_prob, left_nodes, right_nodes, v),
+                                 in_axes=(0,))
+    outputs = batched_inference(batch_values)   # shape (BATCH_SIZE, num_classes)
+
+    # --- 3) compute loss per-example and mean ---
+    losses = optax.softmax_cross_entropy(outputs, batch_correct.astype(jnp.float32))
+    return jnp.mean(losses)
+
 
 def input_network(left_nodes, right_nodes, prob, aus):
     global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
@@ -292,7 +307,6 @@ def train_network(prob, left_nodes, right_nodes):
         loss_sum = 0
         for i in range(STEPS_PER_EPOCH):
             temperature = MAX_TEMPERATURE**((epoch * STEPS_PER_EPOCH + i)/TOTAL_STEPS)
-
             (loss, gradients) = value_and_grad(prob, values[i], answers[i], left_nodes, right_nodes, temperature)
             loss_sum += loss
 
