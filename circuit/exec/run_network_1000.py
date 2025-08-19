@@ -35,7 +35,7 @@ def main():
 
     logger.debug("Evaluating the network")
     os.system("g++ ../evaluator/evaluator.cpp ../circuit.cpp ../circuit.h -Wall -Wextra -std=gnu++17 -static -o evaluate_network")
-    os.system("./evaluate_network ../data/testdata_opt.txt 2gate_trained_network.bin")
+    os.system("./evaluate_network ../data/testdata.txt 2gate_trained_network.bin")
     logger.debug("Evaluated")
     
     # #Cleaning the directory

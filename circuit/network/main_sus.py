@@ -4,6 +4,12 @@ os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"   # don't grab all GPU mem
 import jax.numpy as jnp
 import jax, math, functools, optax
 
+#Cache jit compilation
+jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
+jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
+
 #    ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞ
 
 # IDEAS:
@@ -35,16 +41,13 @@ INPUT_SIZE = 2622
 OUTPUT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 100
-TOTAL_SIZE = 5000
-BATCH_SIZE = 200
+TOTAL_SIZE = 60
+BATCH_SIZE = 5
 
 # Training constants
-BETA2 = .99
-BETA1 = .9
-EPSILON = 1e-5
-LEARNING_RATE = 0.07
-LEARNING_INCREASE = 1.05
-TEMPERATURE = 1
+LEARNING_RATE = 0.05
+WEIGHT_DECAY = 0.005
+MAX_TEMPERATURE = 3
 
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
@@ -72,28 +75,23 @@ def inference_function(p, left, right, values):
     + (1 - pr) * p[14]
     + p[15]
     )
-    return 1/(1+jnp.exp(-10*(sum-0.5)))
+    return sum # 1/(1+jnp.exp(-10*(sum-0.5)))
 
 @jax.jit
 def fitting_function(a):
-    return a
-    global TEMPERATURE, LEARNING_INCREASE
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
-    SUS = SUS + TEMPERATURE
-    TEMPERATURE *= LEARNING_INCREASE
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
 batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
 
-
 @jax.jit
-def inference(prob, left_nodes, right_nodes, values):
+def inference(prob, left_nodes, right_nodes, inputs):
     global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     start_of_current_layer = INPUT_SIZE + 1
-    
-    # Convert values from bool to float.32
-    values = values.astype(jnp.float32)
+
+    values = jnp.zeros((NETWORK_SIZE + 1,))
+    values = values.at[1:INPUT_SIZE+1].set(inputs)
 
     # Layer loop
     for c in range(1, len(prob)):
@@ -147,11 +145,11 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     return (predicted == correct).astype(jnp.float32)
 
 @jax.jit
-def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
+def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes, temperature):
     '''Vectorize loss_function over the batch and return mean loss.'''
 
     for i in range(len(prob)):
-        prob[i] = batch_fitting_function(prob[i])
+        prob[i] = batch_fitting_function(prob[i]) * temperature
         prob[i] = jax.nn.softmax(prob[i], 1)
 
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
@@ -160,6 +158,8 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
 
 def input_network(left_nodes, right_nodes, prob, aus):
     global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
+
+    random.seed(0)
 
     with open("network_architecture.txt", 'r') as file:
         
@@ -209,33 +209,46 @@ def input_network(left_nodes, right_nodes, prob, aus):
             right_nodes.append(jnp.array(right))
             prob.append(jnp.array(p))
         
-    print(len(aus))
+    print("Layers:", len(aus))
 
-def read_values(file, values, answers):
-    with open(file, 'r') as file:
-        for test_case in range(BATCH_SIZE):
+def read_values(file):
+    if os.path.exists(file + ".values.npy"):
+        return jnp.load(file + ".values.npy"), jnp.load(file + ".answers.npy")
+
+    values = []
+    answers = []
+    
+    with open(file, 'r') as f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+
             # read training inputanswer
-            line = list(map(float, file.readline().strip()))
+            line = list(map(float, line.strip()))
 
             # one row: pad with zero in col 0, then inputs
-            row = [0.0] + line + ([0.0] * (NETWORK_SIZE - INPUT_SIZE))
+            row = line
             values.append(row)
 
             # Setting the correct answer
-            ans = int(file.readline().strip())
+            ans = int(f.readline().strip())
             one_hot = [0] * 10
             one_hot[ans] = 1
             answers.append(one_hot)
     
+    values = jnp.array(values)
+    answers = jnp.array(answers)
+    jnp.save(file + ".values.npy", values)
+    jnp.save(file + ".answers.npy", answers)
+
     return values, answers
     
 #@jax.jit
 def train_network(prob, left_nodes, right_nodes):
     global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT, OUTPUT_NODES, INPUT_SIZE
     # Initialize for testing
-    values_list_testing = []
-    answers_list_testing = []
-    read_values("../data/testdata.txt", values_list_testing, answers_list_testing)
+    values_list_testing, answers_list_testing = read_values("../data/testdata_opt.txt")
     values_testing = jnp.array(values_list_testing, dtype=jnp.float32)
     correct_answer_testing = jnp.array(answers_list_testing, dtype=jnp.float32)
 
@@ -246,18 +259,24 @@ def train_network(prob, left_nodes, right_nodes):
     values_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
     answers_list = [[] for _ in range(round(TOTAL_SIZE/BATCH_SIZE))]
 
+    STEPS_PER_EPOCH  = TOTAL_SIZE // BATCH_SIZE
+    TOTAL_STEPS = STEPS_PER_EPOCH * EPOCH_COUNT
+
     print("Reading values")       
-    for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)): 
-        values_list[i],answers_list[i] = read_values("../data/training_opt.txt", values_list[i], answers_list[i])
-    print("Values read")       
+    values_list, answers_list = read_values("../data/training_opt.txt")
 
 
-    optimizer  = optax.adamw(LEARNING_RATE) 
+    optimizer  = optax.adamw(
+        optax.exponential_decay(LEARNING_RATE,
+                                transition_steps = TOTAL_STEPS,
+                                decay_rate = 0.1),
+        weight_decay=WEIGHT_DECAY
+    )
     opt_state = optimizer.init(prob)
 
+    value_and_grad = jax.jit(jax.value_and_grad(scalar_loss))
 
-    values_list = jnp.array(values_list, dtype=jnp.bool)
-    answers_list = jnp.array(answers_list, dtype=jnp.bool)
+    assert TOTAL_SIZE % BATCH_SIZE == 0
 
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
@@ -266,14 +285,17 @@ def train_network(prob, left_nodes, right_nodes):
         values_list = jax.random.permutation(jax.random.PRNGKey(epoch), values_list)
         answers_list = jax.random.permutation(jax.random.PRNGKey(epoch), answers_list)
 
+        values = jnp.reshape(values_list, (STEPS_PER_EPOCH, BATCH_SIZE, -1))
+        answers = jnp.reshape(answers_list, (STEPS_PER_EPOCH, BATCH_SIZE, -1))
+
 
         loss_sum = 0
-        for i in range (0, round(TOTAL_SIZE/BATCH_SIZE)):
-            loss_sum  += scalar_loss(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
+        for i in range(STEPS_PER_EPOCH):
+            temperature = MAX_TEMPERATURE**((epoch * STEPS_PER_EPOCH + i)/TOTAL_STEPS)
 
-            # Backward pass
-            gradients = jax.grad(scalar_loss)(prob, values_list[i], answers_list[i], left_nodes, right_nodes)
-            
+            (loss, gradients) = value_and_grad(prob, values[i], answers[i], left_nodes, right_nodes, temperature)
+            loss_sum += loss
+
             # Update parameters
             updates, opt_state = optimizer.update(gradients, opt_state, params=prob)
             prob = optax.apply_updates(prob, updates)
@@ -293,9 +315,7 @@ def train_network(prob, left_nodes, right_nodes):
 @jax.jit
 def test_network(prob, left_nodes, right_nodes):
     global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
-    values_list = []
-    answers_list = []
-    read_values("../data/testdata_opt.txt", values_list, answers_list)
+    values_list, answers_list = read_values("../data/testdata.txt")
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
@@ -327,31 +347,25 @@ def print_network(aus, prob, left_nodes, right_nodes):
             f.write(int(id).to_bytes(4, byteorder='little', signed=True))
 
 
-    with open("sus.txt", "w") as f:
-        f.write("Newline\n")
-        # Write the network size -> 32 bits/ 4 bytes
-        f.write(str(NETWORK_SIZE) + "\n")
-        for current_layer in range(0, len(aus)):
-            for i in range(0, len(aus[current_layer])):
-                gate_index = int(jnp.argmax(prob[current_layer + 1][i]))
-                f.write(str(gate_index) + " ")
-                f.write(str(int(aus[current_layer][i])) + " ")
-                f.write(str(int(left_nodes[current_layer + 1][i])) + " ")
-                f.write(str(int(right_nodes[current_layer + 1][i])) + "\n")
-
-        f.write(str(OUTPUT_SIZE) + "\n")
-        for id in (OUTPUT_NODES):
-            f.write(str(id) + " ")
-
+    #with open("sus.txt", "w") as f:
+    #    f.write("Newline\n")
+    #    # Write the network size -> 32 bits/ 4 bytes
+    #    f.write(str(NETWORK_SIZE) + "\n")
+    #    for current_layer in range(0, len(aus)):
+    #        for i in range(0, len(aus[current_layer])):
+    #            gate_index = int(jnp.argmax(prob[current_layer + 1][i]))
+    #            f.write(str(gate_index) + " ")
+    #            f.write(str(int(aus[current_layer][i])) + " ")
+    #            f.write(str(int(left_nodes[current_layer + 1][i])) + " ")
+    #            f.write(str(int(right_nodes[current_layer + 1][i])) + "\n")
+    #
+    #    f.write(str(OUTPUT_SIZE) + "\n")
+    #    for id in (OUTPUT_NODES):
+    #        f.write(str(id) + " ")
+    #
 
 def main():
     '''Load architecture, train for EPOCH_COUNT epochs, and save network.'''
-
-    #Cache jit compilation
-    jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
-    jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
-    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-    jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
 
     # Setup network architecture
     left_nodes = []
