@@ -2,13 +2,8 @@
 #include "../circuit.h"
 using namespace std;
 
-<<<<<<< HEAD
-struct AndNot_network { 
-    int N;
-=======
 struct AndNot_network {
     int N, O;
->>>>>>> 49fcfed80ab98d95ce058043fecd42d481033c80
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
     vector<int> result_nodes; // ordered-ids of the final network output nodes
@@ -110,6 +105,7 @@ float make_test(AndNot_network &net, ifstream &in) {
 }   
 
 int main(int argc, char const *argv[]) {
+
     if(argc != 3) 
         program_abort(-1);
 
@@ -122,11 +118,7 @@ int main(int argc, char const *argv[]) {
     // test on the test data
     float num = 0;
     for (int i = 0; i < TESTS; i++) {
-        if(i%500 == 0) cout << "Tested " << i << "/" << TESTS << "\n";
         num += make_test(net, test_input);
     }
-    
-    cout << "Tested " << TESTS << "/" << TESTS << "\n";
-
-    cout << 100.0 * num/(float)TESTS << "% accuracy\n";
+    std::cout << 100.0 * num/(float)TESTS << "\n";
 }

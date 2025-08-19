@@ -4,6 +4,8 @@
 #include<queue>
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
+
 #include "../circuit.h"
 
 #ifndef INT32_MAX
@@ -16,9 +18,6 @@ typedef int int32_t;
 
 This code assumes that the first INPUT_NODES nodes 
 are sorted and their id is in range [1, INPUT_NODES].
-
-It also assumes that the last 10 nodes are sorted and 
-are mapped to [0, 9].
 */
 
 #pragma region declarations
@@ -50,7 +49,7 @@ std::vector<Node> toposorted_nodes;
 std::vector<Node> final_nodes;
 
 //Number of new nodes, avoid clashes between ids
-size_t next_free_node;
+int32_t next_free_node;
 int32_t node_count;
 int32_t first_output_id;
 
@@ -67,15 +66,15 @@ void toposort_nodes() {
     
     for(Node& node : input_nodes)
     {
-        if(abs(node.link_a) != ALWAYS_TRUE) 
+        if(abs(node.link_a) != ALWAYS_TRUE && abs(node.link_a) != ALWAYS_FALSE)
         {
-            reverse_link[node.link_a].emplace_back(node.id);
+            reverse_link[abs(node.link_a)].emplace_back(node.id);
             link_count[node.id]++;
         }
 
-        if(abs(node.link_b) != ALWAYS_FALSE) 
+        if(abs(node.link_b) != ALWAYS_TRUE && abs(node.link_b) != ALWAYS_FALSE) 
         {
-            reverse_link[node.link_b].emplace_back(node.id);
+            reverse_link[abs(node.link_b)].emplace_back(node.id);
             link_count[node.id]++;
         }
 
@@ -90,18 +89,24 @@ void toposort_nodes() {
 
         processed_count++;
 
-        if(node_id > (int32_t)INPUT_NODES) toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        if(node_id > (int32_t)INPUT_NODES) 
+        {
+            toposorted_nodes.push_back(input_nodes[node_id-INPUT_NODES-1]);
+        }
 
         for(int32_t edge : reverse_link[node_id])
         {
             if(--link_count[edge] == 0) process_queue.push(edge);
         }
     }
+
+    if (toposorted_nodes.size() != static_cast<size_t>(node_count - INPUT_NODES))
+    program_abort(EXIT_CONVERSION_ERROR);
 }       
-size_t normal = 0;
-int nodedd_count = 0;
+
+
 void replace_gates() {
-    // not including input nodes7
+    // not including input nodes
 
     for(size_t i = 0; i < toposorted_nodes.size(); i++) {
         std::vector<Node> new_nodes;
@@ -137,20 +142,15 @@ void replace_gates() {
 
             case 6: // XOR
             {
-                int32_t nand_1 = next_free_node;
+                int32_t clean_gate = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, __input_b));
 
-                int32_t nand_2 = next_free_node;
-                new_nodes.push_back(Node(0, next_free_node++, __input_a, -nand_1));
+                int32_t neg_gate = next_free_node;
+                new_nodes.push_back(Node(0, next_free_node++, -__input_a, -__input_b));
 
-                int32_t nand_3 = next_free_node;
-                new_nodes.push_back(Node(0, next_free_node++, __input_b, -nand_1));
-
-                int32_t nand_4 = next_free_node;
-                new_nodes.push_back(Node(0, next_free_node++, -nand_2, -nand_3));
-
-                new_nodes.push_back(Node(0, __id, nand_4, nand_4));
+                new_nodes.push_back(Node(0, __id, -clean_gate, -neg_gate));
                 break;
+                
             }
 
             case 7: // OR
@@ -175,15 +175,21 @@ void replace_gates() {
 
             case 9: // XNOR
             {
-
-                int32_t clean_gate = next_free_node;
+                int32_t nand_1 = next_free_node;
                 new_nodes.push_back(Node(0, next_free_node++, __input_a, __input_b));
 
-                int32_t neg_gate = next_free_node;
-                new_nodes.push_back(Node(0, next_free_node++, -__input_a, -__input_b));
+                int32_t nand_2 = next_free_node;
+                new_nodes.push_back(Node(0, next_free_node++, __input_a, -nand_1));
 
-                new_nodes.push_back(Node(0, __id, -clean_gate, -neg_gate));
-                break;
+                int32_t nand_3 = next_free_node;
+                new_nodes.push_back(Node(0, next_free_node++, __input_b, -nand_1));
+
+                int32_t nand_4 = next_free_node;
+                new_nodes.push_back(Node(0, next_free_node++, -nand_2, -nand_3));
+
+                new_nodes.push_back(Node(0, __id, nand_4, nand_4));
+
+                break;  
             }
 
             case 10: // !B
@@ -234,14 +240,11 @@ void replace_gates() {
         }
 
         
-        if(new_nodes.empty() && new_nodes.back().id == toposorted_nodes[i].id)
+        if(new_nodes.empty() || new_nodes.back().id != toposorted_nodes[i].id)
             program_abort(EXIT_CONVERSION_ERROR);
 
-        for(size_t i = 0; i < new_nodes.size(); i++)
-        {
-            final_nodes.push_back(new_nodes[i]);
-        }
-
+        for(size_t t = 0; t < new_nodes.size(); t++)
+            final_nodes.push_back(new_nodes[t]);
     }
 }
 
@@ -257,28 +260,30 @@ int main(int argc, char const *argv[]) {
 
     node_count = read_int32_t(t16_ifstream);
 
-    first_output_id = node_count - 10 + 1; 
+    first_output_id = node_count - OUTPUT_NODES + 1; 
     next_free_node = node_count + 1;
 
-    for(size_t i = 0; i < node_count-INPUT_NODES; ++i)
+    for(int32_t i = 0; i < node_count-INPUT_NODES; ++i)
     {       
         int32_t node_value[4];
         node_value[0] = read_int32_t(t16_ifstream);
         node_value[1] = read_int32_t(t16_ifstream);
         node_value[2] = read_int32_t(t16_ifstream);
         node_value[3] = read_int32_t(t16_ifstream);
-        // fprintf(stderr, "Read %d\n", i);
         if(node_value[0] > 16 || node_value[0] < 0
          || node_value[1] <=(int32_t) INPUT_NODES){
-            //fprintf(stderr, "Broke at %d\n", i);
-            //fprintf(stderr, "Just read %d %d %d %d\n", node_value[0],node_value[1],node_value[2],node_value[3]);
             program_abort(EXIT_INVALID_NODE_DATA);
         }
 
         input_nodes.push_back(Node(node_value[0], node_value[1], node_value[2], node_value[3]));
     }   
 
-    toposort_nodes();
+    std::sort(input_nodes.begin(), input_nodes.end(), [&](const Node& a, const Node& b)
+    {
+        return a.id < b.id;
+    });
+
+    toposort_nodes();   
 
     replace_gates();
 
@@ -291,10 +296,13 @@ int main(int argc, char const *argv[]) {
         write_int32_t(t2_ofstream, final_nodes[i].link_b);
     }
 
-    for (int32_t i = first_output_id; i < first_output_id+10; i++) {
+    write_int32_t(t2_ofstream, OUTPUT_NODES);
+
+    for (int32_t i = first_output_id; i < first_output_id+OUTPUT_NODES; i++) {
         write_int32_t(t2_ofstream, i);
     }
-
+    std::cout << "Last value printed: " << first_output_id+OUTPUT_NODES-1 << "\n";
+    
     t16_ifstream.close();
     t2_ofstream.close();
     return 0;

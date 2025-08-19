@@ -1,158 +1,305 @@
 import random 
 import jax.numpy as jnp
 import jax, math, functools, optax
-jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
-jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
-jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
 
+#    ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞ
 
-#ඞඞඞඞඞ SUUUUUUUS ඞඞඞඞඞඞඞඞඞඞඞ
+# IDEAS:
+# Instead of mapping connections with randint, try 
+# mapping central pixels more often
+#
+# Instead of having a static input size of 784, try
+# passing other statistics such as density of smaller
+# squares and similar stuff. If you want to give more
+# weight to a statistic, just feed the statistic nodes 
+# to the network multiple times
+#
+# Simulate the first 10 epochs and re-map empty connections
+# in the first layer to other input nodes
+#
+# Convolution sus
+# 
+# Try connecting nodes from earlier layers. For instance, suppose
+# having a 8 layer network. At layer 5 connect the input nodes as 
+# well. This allows the network to build some internal statistics
+# 
+# After computing the activation value, re-map it from [0,1] to 
+# [0,1] but try to squeeze the middle values more to the side.
+# Use a sigmoid for instance. 
+#
+# Extract images from a standard mnist to get a better idea of which
+# statistics are more important. 
 # Network constants
-NETWORK_SIZE = 0  # Number of gates in the network
+NETWORK_SIZE = 0  # number of gates (set from file)
+OUTPUT_SIZE = 0 # output size (set from file)
+INPUT_SIZE = 784
 OUTPUT_NODES = []
-LEFT_NODES = []
-RIGHT_NODES = []
 
 # Training input parameters
-EPOCH_COUNT = 20
-INPUT_SIZE = 784
-BATCH_SIZE = 64
+EPOCH_COUNT = 1000
+BATCH_SIZE = 1000
 
 # Training constants
-ALPHA = 0.001
-BETA2 = .999
+#ALPHA = 0.001
+BETA2 = .99
 BETA1 = .9
-EPSILON = 1e-4
-LEARNING_RATE = 0.01
+EPSILON = 1e-8
+LEARNING_RATE = 0.5
+LEARNING_INCREASE = 1.2
+
 # This should be multiplied by BETA1 and BETA2
 # and be updated for each iteration
-BETA1_TIMESTAMP = 0
-BETA2_TIMESTAMP = 0
-
+    
 # basic inference function for probabilities
 @jax.jit
 def inference_function(a: float, b: float, p):
-    return p[0] * a * b + p[1] * a * (1 - b) + p[2] * (1 - a) * b + p[3] * (1 - a) * (1 - b)
+    sum = p[0] * a * b + p[1] * a * (1 - b) + p[2] * (1 - a) * b + p[3] * (1 - a) * (1 - b)
+    return 1/(1+jnp.exp(-5*(sum-0.5)))
 
-def get_gate(index: int, prob) -> int:
+def get_gate(prob) -> int:
     num: int = 0
 
     for i in range(4):
-        num += (round(prob[index][i]) << i)
+        num += (round(prob[i]) << i)
 
     return num
+
+@jax.jit
+def fitting_function(a):
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])    
+    return jnp.multiply(a, SUS)
+
+layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
+# batch_fitting_function = jax.jit(jax.vmap(fitting_function, in_axes=(0)))
+
+@jax.jit
+def inference(prob, left_nodes, right_nodes, values):
+    global INPUT_SIZE, OUTPUT_NODES, OUTPUT_SIZE
+    start_of_current_layer = INPUT_SIZE+1
+
+    # Layer loop
+    for c in range(1, len(prob)):
+        end_of_current_layer = start_of_current_layer+len(prob[c])
+        aus = layer_inference(prob[c], left_nodes[c], right_nodes[c], values)
+        values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
+        start_of_current_layer = end_of_current_layer
     
+    category_size = OUTPUT_SIZE // 10  # Assuming 10 categories for MNIST
+    outputs = jnp.array([jnp.mean(jnp.array([values[id] for id in 
+                OUTPUT_NODES[cat*category_size:((cat+1)*category_size)]])) for cat in range (10)])
+
+    return outputs
 
 @jax.jit
-def loss_function(prob, values, correct_answer):
-    # inference + evaluating cost function
-    # feedforward
-    for i in range(INPUT_SIZE+1,NETWORK_SIZE+1):
-        prob = prob.at[i].set(jax.nn.softmax(prob[i]))
-        values = values.at[i].set(inference_function(values[LEFT_NODES[i]], values[RIGHT_NODES[i]], prob[i]))
-
-    outputs = jnp.array([values[node] for node in OUTPUT_NODES])
-    return jnp.mean(jnp.square(outputs - correct_answer))
+def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
+    '''Run forward pass and return loss between outputs and correct_answer.'''
+    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer)
 
 @jax.jit
-def scalar_loss(prob, values, correct_answer):
-    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0)) 
-    loss = batch_loss(prob, values, correct_answer)
+def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
+    '''Run forward pass and return accuracy between outputs and correct_answer.'''
+    # Boolean vector: True where prediction > 0.5
+    predicted = inference(prob, left_nodes, right_nodes, values) > 0.5
+    cnt = jnp.sum(predicted)
+
+    # Boolean vector: where prediction and correct answer are both 1
+    true_positives = predicted & correct_answer.astype(bool)
+
+    # g = 1 if any true positive exists, else 0
+    g = jnp.any(true_positives).astype(jnp.float32)
+
+    return jnp.where(cnt == 0, 0.1, g / cnt)
+
+@jax.jit
+def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes):
+    '''Vectorize loss_function over the batch and return mean loss.'''
+    for i in range(len(prob)):
+        # prob[i] = batch_fitting_function(prob[i])
+        prob[i] = jax.nn.softmax(prob[i], 1)
+
+    batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
+    loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
     return jnp.mean(loss)
 
 
-def main():
-    global BETA1_TIMESTAMP, BETA2_TIMESTAMP, BATCH_SIZE, EPSILON, LEARNING_RATE, INPUT_SIZE, OUTPUT_NODES
-
-    # Load network architecture
+def input_network(left_nodes, right_nodes, prob, aus):
+    global INPUT_SIZE, NETWORK_SIZE, OUTPUT_NODES, OUTPUT_SIZE
     with open("network_architecture.txt", 'r') as file:
-        global NETWORK_SIZE, LEFT_NODES, RIGHT_NODES, EPOCH_COUNT
-
         # Initialize network size 
         NETWORK_SIZE = int(file.readline().strip())
 
         # Initialize null connections of input nodes
-        LEFT_NODES = [-1 for x in range(0, INPUT_SIZE+1)]
-        RIGHT_NODES = [-1 for x in range(0, INPUT_SIZE+1)]    
+        LEFT = [-1 for x in range(0, INPUT_SIZE+1)]
+        RIGHT = [-1 for x in range(0, INPUT_SIZE+1)]    
 
         # Initialize all other nodes
         for _ in range (INPUT_SIZE+1, NETWORK_SIZE+1):
             left, right = map(int, file.readline().strip().split())
-            LEFT_NODES.append(left)
-            RIGHT_NODES.append(right)
+            LEFT.append(left)
+            RIGHT.append(right)
 
-        # Initialize output nodes
-        # assumed to be the last N : TODO
-        number_outputs = int(file.readline().strip())
-        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-number_outputs+1, NETWORK_SIZE+1)]
+        # Initialize output nodes (assumed to be the last N)
+        OUTPUT_SIZE = int(file.readline().strip())
+        OUTPUT_NODES = [x for x in range(NETWORK_SIZE-OUTPUT_SIZE+1, NETWORK_SIZE+1)]
 
-    # Initialize the network with random probabilities
-    prob = jnp.array([[random.random() for _ in range (16)] for _ in range(NETWORK_SIZE)], dtype=jnp.float16)
+        # Calculate the layers
+        l = [0 for _ in range(0, NETWORK_SIZE+1)]
+        att = 0
+        for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
+            if l[LEFT[id]] == att or l[RIGHT[id]] == att: 
+                att+=1
+                aus.append([])
+            aus[-1].append(id)
+            l[id] = att
+
+
+        # Initialize layers
+        left_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
+        right_nodes.append(jnp.zeros((INPUT_SIZE+1), dtype=jnp.int32))
+        prob.append(jnp.zeros((INPUT_SIZE+1, 4), dtype=jnp.float32))
+        for x in aus:
+            left = []
+            right = []
+            p = []
+            for id in x:
+                left.append(LEFT[id])
+                right.append(RIGHT[id])
+                p.append([0.1 for index in range(4)])
+                p[-1][3] = 1
+
+            left_nodes.append(jnp.array(left))
+            right_nodes.append(jnp.array(right))
+            prob.append(jnp.array(p))
+
+
+def read_values(file, values, answers):
+    print("Reading values")       
+
+    with open(file, 'r') as file:
+        for test_case in range(BATCH_SIZE):
+            # read training inputanswer
+            line = list(map(float, file.readline().strip()))
+
+            # one row: pad with zero in col 0, then inputs
+            row = [0.0] + line + ([0.0] * (NETWORK_SIZE - INPUT_SIZE))
+            values.append(row)
+
+            # Setting the correct answer
+            ans = int(file.readline().strip())
+            one_hot = [0] * 10
+            one_hot[ans] = 1
+            answers.append(one_hot)
+    print("Values read")       
     
-    BETA1_TIMESTAMP = 1
-    BETA2_TIMESTAMP = 1
+#@jax.jit
+def train_network(prob, left_nodes, right_nodes):
+    global LEARNING_RATE, BETA1, BETA2, EPSILON, EPOCH_COUNT
+    # Read training data
+    values_list = []
+    answers_list = []
+    read_values("../data/training.txt", values_list, answers_list)
+    values = jnp.array(values_list, dtype=jnp.float32)
+    correct_answer = jnp.array(answers_list, dtype=jnp.float32)
+
+    optimizer  = optax.adam(learning_rate=optax.schedules.exponential_decay(LEARNING_RATE, EPOCH_COUNT, LEARNING_INCREASE), b1=BETA1, b2=BETA2, eps=EPSILON) 
+    opt_state = optimizer.init(prob)
+
     # Start training routine
     for epoch in range (0, EPOCH_COUNT):
-        print("Epoch " + str(epoch+1))
-        # Update timestamps (these represent BETA^t)
-        BETA1_TIMESTAMP *= BETA1
-        BETA2_TIMESTAMP *= BETA2
-
-        # Initialize optimizer
-        optimizer  = optax.adam(learning_rate=LEARNING_RATE, b1=BETA1_TIMESTAMP, b2=BETA2_TIMESTAMP, eps=EPSILON)
-        opt_state = optimizer.init(prob)
-
-        # Initialize values to 0 for the batch
-        values = jnp.zeros((BATCH_SIZE, NETWORK_SIZE), dtype=jnp.float16)
-        answer = []
-        # For each image in the batch read training data
-        for test_case in range(0, BATCH_SIZE):
-            with open("../data/training/img_" + str(test_case) + ".txt", 'r') as file:
-                #read training input
-                line = list(map(float, file.readline().strip()))
-
-                for id in range (1, INPUT_SIZE+1):
-                    values = values.at[test_case, id].set(line[id-1])
-
-                # Setting the correct answer
-                ans = int(file.readline().strip())
-
-                answer.append([0 for _ in range(len(OUTPUT_NODES))])
-                answer[test_case][ans] = 1
-                print("Test case " + str(test_case))
-            
-        correct_answer = jnp.array(answer)
-
+        LEARNING_RATE *= LEARNING_INCREASE
         # Forward pass
-        loss_value = scalar_loss(prob, values, correct_answer)
-        print("Loss value: " + str(loss_value))
+        loss_value = scalar_loss(prob, values, correct_answer, left_nodes, right_nodes)
+        if epoch % 20 ==0: print("Epoch " + str(epoch+1) + "     Mean value: " + str(loss_value))
 
-        #Backward pass
-        gradients = jax.jit(jax.grad(scalar_loss, argnums=0))(prob, values, correct_answer)
+        # Backward pass
+        gradients = jax.grad(scalar_loss)(prob, values, correct_answer, left_nodes, right_nodes)
         
         # Update parameters
         updates, opt_state = optimizer.update(gradients, opt_state)
         prob = optax.apply_updates(prob, updates)
-        
-        
+    return prob
+
+@jax.jit
+def test_network(prob, left_nodes, right_nodes):
+    global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
+    values_list = []
+    answers_list = []
+    read_values("../data/testdata.txt", values_list, answers_list)
+    values = jnp.array(values_list, dtype=jnp.float32)
+    correct_answer = jnp.array(answers_list, dtype=jnp.float32)
+
+    for i in range(len(prob)):
+        prob[i] = jax.nn.softmax(prob[i], 1)
+
+    batch_accuracy = jax.vmap(accuracy_function, in_axes=(None, 0, 0, None, None)) 
+    acc = batch_accuracy(prob, values, correct_answer, left_nodes, right_nodes)
+    return jnp.mean(acc)
 
 
-    # Print the network
+def print_network(aus, prob, left_nodes, right_nodes):
+    global NETWORK_SIZE, OUTPUT_NODES
+    # # Print the network
     with open("trained_network.bin", "wb") as f:
         # Write the network size -> 32 bits/ 4 bytes
         f.write(NETWORK_SIZE.to_bytes(4, byteorder = 'little'))
+        for current_layer in range(0, len(aus)):
+            for i in range(0, len(aus[current_layer])):
+                gate_index = get_gate(prob[current_layer][i])
+                f.write(gate_index.to_bytes(4, byteorder='little', signed=True))
+                f.write(int(aus[current_layer][i]).to_bytes(4, byteorder='little', signed=True))
+                f.write(int(left_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
+                f.write(int(right_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
 
-        # Write the network gates
-        for id in range(INPUT_SIZE+1, NETWORK_SIZE+1):
-            gate_type = get_gate(id, prob)
-            f.write(gate_type.to_bytes(4, byteorder = 'little', signed=True))
+        f.write(OUTPUT_SIZE.to_bytes(4, byteorder='little', signed=True))
+        for id in (OUTPUT_NODES):
             f.write(id.to_bytes(4, byteorder='little', signed=True))
-            f.write(int(LEFT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
-            f.write(int(RIGHT_NODES[id]).to_bytes(4, byteorder='little', signed=True))
 
-        for id in range (NETWORK_SIZE-9, NETWORK_SIZE+1):
-            f.write(id.to_bytes(4, byteorder='little', signed=True))
+
+def main():
+    '''Load architecture, train for EPOCH_COUNT epochs, and save network.'''
+
+    #Cache jit compilation
+    jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
+    jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+    jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
+
+    # Setup network architecture
+    left_nodes = []
+    right_nodes = []
+    prob = []
+    aus = []
+    input_network(left_nodes, right_nodes, prob, aus)
+
+    #Train network
+    prob = train_network(prob, left_nodes, right_nodes)
+
+    # Test network on testadata
+    print(test_network(prob, left_nodes, right_nodes))
+
+    # Print the network to binary file
+    print_network(aus, prob, left_nodes, right_nodes)
+    
+
+    # with open("sus.txt", "w") as f:
+        
+    #     # Write the network size -> 32 bits/ 4 bytes
+    #     for i in range(len(prob)):
+    #             prob[i] = jax.nn.softmax(prob[i], 1)    
+    #     f.write(str(NETWORK_SIZE) + "\n\n")
+    #     for current_layer in range(0, len(aus)):
+    #         for i in range(0, len(aus[current_layer])):
+
+    #             gate_index = int(jnp.argmax(prob[current_layer + 1][i]))
+    #             f.write(str(gate_index) + " ")
+
+    #             f.write(str(int(aus[current_layer][i])) + " ")
+    #             f.write(str(int(left_nodes[current_layer + 1][i]))+ " ")
+    #             f.write(str(int(right_nodes[current_layer + 1][i])) + " \n")
+
+    #     f.write("\n");
+    #     for id in OUTPUT_NODES:
+    #         f.write(str(id)+ " ")
 
 
 if __name__ == "__main__":
