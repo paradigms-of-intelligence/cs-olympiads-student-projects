@@ -2,7 +2,7 @@
 #include "../circuit.h"
 using namespace std;
 
-struct AndNot_network {
+struct AndNot_network { 
     int N;
     vector<bool> value; // bit values for calculation
     vector<int> C_1, C_2; // edges
@@ -28,7 +28,6 @@ struct AndNot_network {
     void input_into(vector<bool> &in) {
         for (int i = 1; i <= (int)INPUT_NODES; i++) value[i] = in[i-1];
     }
-
 
     bool getvalue(int id){
         bool c = 0;
@@ -90,7 +89,6 @@ float make_test(AndNot_network &net, ifstream &in) {
 }   
 
 int main(int argc, char const *argv[]) {
-
     if(argc != 3) 
         program_abort(-1);
 
