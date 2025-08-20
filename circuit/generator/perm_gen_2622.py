@@ -2,11 +2,11 @@ from random import *
 
 # dimensioni corrette per MNIST con feature estese
 PIXEL_INPUT = 784
-EXTRA_FEATURES = 729 + 625 + 484 + 260  # 1838
+EXTRA_FEATURES = 729 + 625 + 484  # 1838
 INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
 
 OUTPUT_NODES = 1000
-LAYERS = [INPUT_NODES, 3000, 2000, OUTPUT_NODES]
+LAYERS = [INPUT_NODES, 1500, 1000, OUTPUT_NODES]
 
 
 def id_to_pos(node):

@@ -1,70 +1,47 @@
-from random import *
+import sys
 
-# dimensioni corrette per MNIST con feature estese
-PIXEL_INPUT = 784
-EXTRA_FEATURES = 729 + 625 + 484  # 1838
-INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
+def extract_features(img_flat, TOL):
+    size = 28  # MNIST immagini 28x28
+    img = [img_flat[i*size:(i+1)*size] for i in range(size)]  # reshape in matrice
 
-OUTPUT_NODES = 1000
-LAYERS = [INPUT_NODES, 1500, 1000, OUTPUT_NODES]
+    features = []
 
+    for block_size in [2, 4, 7]:
+        for r in range(0, size - block_size + 1):
+            for c in range(0, size - block_size + 1):
+                block = [img[rr][c:c+block_size] for rr in range(r, r+block_size)]
+                count = sum(sum(row) for row in block)
+                features.append(1 if count > TOL * (block_size*block_size) else 0)
 
-def id_to_pos(node):
-    """Mappa i primi 784 nodi (pixel) a coordinate 28x28.
-       I nodi extra non hanno posizione."""
-    if node < PIXEL_INPUT:
-        return (node // 28, node % 28)
-    return None  # feature extra
-
-
-def comp_prob(x, y):
-    return pow((min(x, 28-x) + min(y, 28-y)), 3)
+    return img_flat + features
 
 
 def main():
-    print(sum(LAYERS))
-    first_layer_node = 1
+    TOL = 0.3
+    path = sys.argv[1]
+    
+    data = []
+    labels = []
+    with open(path, 'r') as file:
+        lines = [line.strip() for line in file if line.strip()]
 
-    for layer in range(1, len(LAYERS)):
-        prev_size = LAYERS[layer-1]
-        next_size = LAYERS[layer]
+        for i in range(0, len(lines), 2):
+            img = [int(ch) for ch in lines[i]]
+            img_features = extract_features(img, TOL)
+            data.append(img_features)
 
-        nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
+            if i + 1 < len(lines):
+                labels.append(int(lines[i+1]))
 
-        while len(nl) < next_size:
-            nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
-        shuffle(nl)
+    # stampa solo lunghezze (saranno tutte 2622)
+    for d in data:
+        print(len(d))
 
-        nr = []
-        if layer == 1:
-            prob = []
-            for node in range(first_layer_node, first_layer_node + prev_size):
-                pos = id_to_pos(node - 1)  # node-1 perché parte da 1
-                if pos is None:
-                    p = 1.0  # feature extra → probabilità uniforme
-                else:
-                    x, y = pos
-                    p = comp_prob(x, y)
-                prob.append(p)
-
-            _sum = sum(prob)
-            prob = [p/_sum for p in prob]
-
-            nr = choices(
-                population=[i for i in range(first_layer_node, first_layer_node + prev_size)],
-                weights=prob,
-                k=next_size
-            )
-
-            first_layer_node += prev_size
-        else:
-            nr = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
-            first_layer_node += prev_size
-
-        for l, r in zip(nl, nr):
-            print(str(l) + " " + str(r))
-
-    print(OUTPUT_NODES)
+    # scrivi su new_file.txt
+    with open("new_file.txt", "w") as f:
+        for img, lbl in zip(data, labels):
+            f.write("".join(map(str, img)) + "\n")
+            f.write(str(lbl) + "\n")
 
 
 if __name__ == "__main__":
