@@ -53,7 +53,7 @@ int main() {
   std::cerr << test << ' ' << final.size() << ' ' << id << std::endl;
   for(int i = 0; i < layers.size(); ++i) {
     if(i == layers.size()-2) {
-      for(int i = 0; i <= 784; ++i) final.push_back(i);
+      for(int i = 1; i <= 784; ++i) final.push_back(i);
     }
     std::vector<int> nl = final, nr;
     std::shuffle(nl.begin(), nl.end(), rng);
