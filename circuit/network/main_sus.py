@@ -45,7 +45,7 @@ TOTAL_SIZE = 60000
 BATCH_SIZE = 1000
 
 # Training constants
-LEARNING_RATE = 0.05 
+LEARNING_RATE = 0.03 
 WEIGHT_DECAY = 0.005
 MAX_TEMPERATURE = 3
 
@@ -79,7 +79,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -218,8 +218,9 @@ def input_network(left_nodes, right_nodes, prob, aus):
             for id in x:
                 left.append(LEFT[id])
                 right.append(RIGHT[id])
-                p.append([random.uniform(0, 1) for index in range(16)])
-
+                p.append([0.063 for index in range(16)])
+                p[-1][3] = 0.9
+                
             left_nodes.append(jnp.array(left))
             right_nodes.append(jnp.array(right))
             prob.append(jnp.array(p))

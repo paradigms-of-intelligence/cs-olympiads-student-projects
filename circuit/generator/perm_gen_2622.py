@@ -5,8 +5,8 @@ PIXEL_INPUT = 784
 EXTRA_FEATURES = 729 + 625 + 484  # 1838
 INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
 
-OUTPUT_NODES = 30000
-LAYERS = [INPUT_NODES, OUTPUT_NODES]
+OUTPUT_NODES = 3000
+LAYERS = [INPUT_NODES, 4000, 3500, OUTPUT_NODES]
 
 
 def id_to_pos(node):
@@ -31,8 +31,7 @@ def main():
 
         nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
 
-        #TODO CHANGE THIS OMFG
-        if(False):
+        if(next_size > prev_size):
             while len(nl) < next_size:
                 nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
             shuffle(nl)
