@@ -79,7 +79,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -136,13 +136,6 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
     return (predicted == correct).astype(jnp.float32)
 
 
-@jax.jit
-def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
-    '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
-    predicted = (jnp.argmax(helper)).astype(jnp.int32)
-    correct = jnp.argmax(correct_answer).astype(jnp.int32)
-    return (predicted == correct).astype(jnp.float32)
 
 @jax.jit
 def scalar_loss(prob, batch_values, batch_correct, left_nodes, right_nodes, temperature):
@@ -281,12 +274,10 @@ def train_network(prob, left_nodes, right_nodes):
     print("Reading values")       
     values_list, answers_list = read_values("../data/training_opt.txt")
 
-
-
     optimizer  = optax.adamw(
         optax.exponential_decay(LEARNING_RATE,
                                 transition_steps = TOTAL_STEPS,
-                                decay_rate = 4.0),
+                                decay_rate = 1.1),
         weight_decay=WEIGHT_DECAY
     )
     opt_state = optimizer.init(prob)
@@ -299,8 +290,9 @@ def train_network(prob, left_nodes, right_nodes):
     for epoch in range (0, EPOCH_COUNT):
         # Forward pass
 
-        values_list = jax.random.permutation(jax.random.PRNGKey(epoch), values_list)
-        answers_list = jax.random.permutation(jax.random.PRNGKey(epoch), answers_list)
+        seed = random.randint(1, 100000)
+        values_list = jax.random.permutation(jax.random.PRNGKey(epoch * seed), values_list)
+        answers_list = jax.random.permutation(jax.random.PRNGKey(epoch * seed), answers_list)
 
         values = jnp.reshape(values_list, (STEPS_PER_EPOCH, BATCH_SIZE, -1))
         answers = jnp.reshape(answers_list, (STEPS_PER_EPOCH, BATCH_SIZE, -1))
