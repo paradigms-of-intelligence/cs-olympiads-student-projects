@@ -329,7 +329,7 @@ def train_network(prob, left_nodes, right_nodes):
 @jax.jit
 def test_network(prob, left_nodes, right_nodes):
     global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
-    values_list, answers_list = read_values("../data/testdata_opt.txt")
+    values_list, answers_list = read_values("../data/testdata.txt")
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
