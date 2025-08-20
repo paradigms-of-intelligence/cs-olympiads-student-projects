@@ -29,6 +29,7 @@ int ID(int x, int y) {
 int main() {
   std::random_device dev;
   std::mt19937 rng(dev());
+  rng.seed(0);
   std::vector<int> final;
   int test = 0;
   for(int x = 0; x < 25; ++x) {
