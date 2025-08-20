@@ -5,8 +5,8 @@ PIXEL_INPUT = 784
 EXTRA_FEATURES = 729 + 625 + 484  # 1838
 INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
 
-OUTPUT_NODES = 6000
-LAYERS = [INPUT_NODES, 4000, 3500, OUTPUT_NODES]
+OUTPUT_NODES = 4000
+LAYERS = [INPUT_NODES, 5000, 4000, OUTPUT_NODES]
 
 
 def id_to_pos(node):
@@ -18,7 +18,7 @@ def id_to_pos(node):
 
 
 def comp_prob(x, y):
-    return pow((min(x, 28-x) + min(y, 28-y)), 3)
+    return pow((min(x, 28-x) + min(y, 28-y)), 2.5)
 
 
 def main():
