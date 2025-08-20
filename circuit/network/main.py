@@ -45,8 +45,8 @@ TOTAL_SIZE = 60000
 BATCH_SIZE = 500
 
 # Training constants
-LEARNING_RATE = 0.05
-WEIGHT_DECAY = 0.005
+LEARNING_RATE = 0.003
+WEIGHT_DECAY = 0.0005
 MAX_TEMPERATURE = 3
 
 # This should be multiplied by BETA1 and BETA2
@@ -79,7 +79,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -117,7 +117,9 @@ def inference(prob, left_nodes, right_nodes, inputs):
 @jax.jit
 def loss_function(prob, values, correct_answer, left_nodes, right_nodes):
     '''Run forward pass and return loss between outputs and correct_answer.'''
-    return optax.softmax_cross_entropy(inference(prob, left_nodes, right_nodes, values), correct_answer.astype(jnp.float32))
+    result = inference(prob, left_nodes, right_nodes, values)
+    onehotresult = jax.nn.one_hot(jnp.argmax(result), 10)
+    return optax.softmax_cross_entropy(result, correct_answer.astype(jnp.float32)), (onehotresult == correct_answer).astype(jnp.float32)
 
 def layer_normalize(prob):
     '''Normalize the probabilities to all 0 and a 1'''
@@ -137,14 +139,6 @@ def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
 
 
 @jax.jit
-def accuracy_function(prob, values, correct_answer, left_nodes, right_nodes):
-    '''Run forward pass and return accuracy between outputs and correct_answer.'''
-    helper = jnp.array(inference(prob, left_nodes, right_nodes, values))
-    predicted = (jnp.argmax(helper)).astype(jnp.int32)
-    correct = jnp.argmax(correct_answer).astype(jnp.int32)
-    return (predicted == correct).astype(jnp.float32)
-
-@jax.jit
 def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes, temperature):
     '''Vectorize loss_function over the batch and return mean loss.'''
 
@@ -153,7 +147,8 @@ def scalar_loss(prob, values, correct_answer, left_nodes, right_nodes, temperatu
         prob[i] = jax.nn.softmax(prob[i], 1)
 
     batch_loss = jax.vmap(loss_function, in_axes=(None, 0, 0, None, None)) 
-    loss = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
+    loss, accuracy = batch_loss(prob, values, correct_answer, left_nodes, right_nodes)
+    jax.debug.print("{}", jnp.mean(accuracy))
     return jnp.mean(loss)
 
 def input_network(left_nodes, right_nodes, prob, aus):
@@ -203,7 +198,8 @@ def input_network(left_nodes, right_nodes, prob, aus):
             for id in x:
                 left.append(LEFT[id])
                 right.append(RIGHT[id])
-                p.append([random.uniform(0, 1) for index in range(16)])
+                p.append([0.06 for index in range(16)])
+                p[-1][random.randint(1,2)*2+1] = 2
 
             left_nodes.append(jnp.array(left))
             right_nodes.append(jnp.array(right))
@@ -290,8 +286,10 @@ def train_network(prob, left_nodes, right_nodes):
 
 
         loss_sum = 0
+        accuracy_sum = 0
         for i in range(STEPS_PER_EPOCH):
             temperature = MAX_TEMPERATURE**((epoch * STEPS_PER_EPOCH + i)/TOTAL_STEPS)
+
 
             (loss, gradients) = value_and_grad(prob, values[i], answers[i], left_nodes, right_nodes, temperature)
             loss_sum += loss
@@ -387,3 +385,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
