@@ -282,6 +282,7 @@ def train_network(prob, left_nodes, right_nodes):
     values_list, answers_list = read_values("../data/training_opt.txt")
 
 
+    LEARNING_RATE = LEARNING_RATE ** 1.2
     optimizer  = optax.adamw(
         optax.exponential_decay(LEARNING_RATE,
                                 transition_steps = TOTAL_STEPS,
