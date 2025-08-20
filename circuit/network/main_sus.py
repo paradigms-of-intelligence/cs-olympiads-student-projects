@@ -79,7 +79,7 @@ def inference_function(p, left, right, values):
 
 @jax.jit
 def fitting_function(a):
-    SUS = jnp.array([0.1, 0.1, 0.1, 0.11, 0.1, 0.11, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
+    SUS = jnp.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
     return jnp.multiply(a, SUS)
 
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes=(0, 0, 0, None)))
@@ -285,7 +285,7 @@ def train_network(prob, left_nodes, right_nodes):
     optimizer  = optax.adamw(
         optax.exponential_decay(LEARNING_RATE,
                                 transition_steps = TOTAL_STEPS,
-                                decay_rate = 0.1),
+                                decay_rate = 1.1),
         weight_decay=WEIGHT_DECAY
     )
     opt_state = optimizer.init(prob)
