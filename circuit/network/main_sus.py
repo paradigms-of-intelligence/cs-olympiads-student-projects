@@ -37,7 +37,7 @@ jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_
 # Network constants
 NETWORK_SIZE = 0  # number of gates (set from file)
 OUTPUT_SIZE = 0 # output size (set from file)
-INPUT_SIZE = 2882
+INPUT_SIZE = 2622
 OUTPUT_NODES = []
 # Training input parameters
 EPOCH_COUNT = 150
@@ -329,7 +329,7 @@ def train_network(prob, left_nodes, right_nodes):
 @jax.jit
 def test_network(prob, left_nodes, right_nodes):
     global BATCH_SIZE, OUTPUT_NODES, INPUT_SIZE
-    values_list, answers_list = read_values("../data/testdata.txt")
+    values_list, answers_list = read_values("../data/testdata_opt.txt")
     values = jnp.array(values_list, dtype=jnp.float32)
     correct_answer = jnp.array(answers_list, dtype=jnp.float32)
 
