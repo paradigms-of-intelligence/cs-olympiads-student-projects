@@ -45,8 +45,8 @@ TOTAL_SIZE = 60000
 BATCH_SIZE = 1000
 
 # Training constants
-LEARNING_RATE = 0.001
-WEIGHT_DECAY = 0.003
+LEARNING_RATE = 0.5
+WEIGHT_DECAY = 1.1
 MAX_TEMPERATURE = 3
 
 # This should be multiplied by BETA1 and BETA2
