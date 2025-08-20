@@ -40,7 +40,7 @@ OUTPUT_SIZE = 0 # output size (set from file)
 INPUT_SIZE = 2622
 OUTPUT_NODES = []
 # Training input parameters
-EPOCH_COUNT = 60
+EPOCH_COUNT = 100
 TOTAL_SIZE = 60000
 BATCH_SIZE = 1000
 
@@ -282,11 +282,11 @@ def train_network(prob, left_nodes, right_nodes):
     values_list, answers_list = read_values("../data/training_opt.txt")
 
 
-    LEARNING_RATE = LEARNING_RATE ** 1.2
+
     optimizer  = optax.adamw(
         optax.exponential_decay(LEARNING_RATE,
                                 transition_steps = TOTAL_STEPS,
-                                decay_rate = 1.1),
+                                decay_rate = 4.0),
         weight_decay=WEIGHT_DECAY
     )
     opt_state = optimizer.init(prob)
