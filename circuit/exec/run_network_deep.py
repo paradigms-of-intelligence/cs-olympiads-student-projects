@@ -17,12 +17,12 @@ def main():
     os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"
     # # Generator
     logger.debug("Generating a network architecture")
-    os.system("g++ ../generator/supreme_generator.cpp -o ../generator/generator && ../generator/generator > ./network_architecture.txt")
+    os.system("g++ ../generator/superior_generator.cpp -o ../generator/generator && ../generator/generator > ./network_architecture.txt")
     logger.debug("Generated")
 
     # # Network
     logger.debug("Setup the network gates")
-    os.system("python3 ../network/main.py") #prints a trained_network.bin
+    os.system("python3 ../network/main_law.py") #prints a trained_network.bin
     logger.debug("16-gate network set up")
 
     # # Converter
