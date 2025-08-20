@@ -6,7 +6,7 @@ EXTRA_FEATURES = 729 + 625 + 484  # 1838
 INPUT_NODES = PIXEL_INPUT + EXTRA_FEATURES  # 2622
 
 OUTPUT_NODES = 10000
-LAYERS = [INPUT_NODES, 15000, 13000, 13000, 13000, OUTPUT_NODES]
+LAYERS = [INPUT_NODES, 8000, 8000, OUTPUT_NODES]
 
 
 def id_to_pos(node):
@@ -31,35 +31,41 @@ def main():
 
         nl = [x for x in range(first_layer_node, first_layer_node + min(prev_size, next_size))]
 
-        while len(nl) < next_size:
-            nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
-        shuffle(nl)
+        if(next_size > prev_size):
+            while len(nl) < next_size:
+                nl.append(randint(first_layer_node, first_layer_node + prev_size-1))
+            shuffle(nl)
 
-        nr = []
-        if layer == 1:
-            prob = []
-            for node in range(first_layer_node, first_layer_node + prev_size):
-                pos = id_to_pos(node - 1)  # node-1 perché parte da 1
-                if pos is None:
-                    p = 1.0  # feature extra → probabilità uniforme
-                else:
-                    x, y = pos
-                    p = comp_prob(x, y)
-                prob.append(p)
+            nr = []
+            if layer == 1:
+                prob = []
+                for node in range(first_layer_node, first_layer_node + prev_size):
+                    pos = id_to_pos(node - 1)  # node-1 perché parte da 1
+                    if pos is None:
+                        p = 1.0  # feature extra → probabilità uniforme
+                    else:
+                        x, y = pos
+                        p = comp_prob(x, y)
+                    prob.append(p)
 
-            _sum = sum(prob)
-            prob = [p/_sum for p in prob]
+                _sum = sum(prob)
+                prob = [p/_sum for p in prob]
 
-            nr = choices(
-                population=[i for i in range(first_layer_node, first_layer_node + prev_size)],
-                weights=prob,
-                k=next_size
-            )
+                nr = choices(
+                    population=[i for i in range(first_layer_node, first_layer_node + prev_size)],
+                    weights=prob,
+                    k=next_size
+                )
 
-            first_layer_node += prev_size
+                first_layer_node += prev_size
+            else:
+                nr = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
+                first_layer_node += prev_size
         else:
+            nl = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
             nr = [randint(first_layer_node, first_layer_node + prev_size-1) for _ in range(0, next_size)]
             first_layer_node += prev_size
+
 
         for l, r in zip(nl, nr):
             print(str(l) + " " + str(r))
