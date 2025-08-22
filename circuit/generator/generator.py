@@ -133,8 +133,9 @@ def generate_network_probabilistic_model(rnd_seed: int = 0):
                 first_layer_node += prev_size
 
             # write edges left->right
+            cnt = 785
             for l, r in zip(nl, nr):
-                f.write(f"{l} {r}\n")
+                f.write(f"{l} {r} {cnt}\n")
+                cnt += 1
 
         # optional footer
-        f.write(f"# Total output nodes: {OUTPUT_NODES}\n")

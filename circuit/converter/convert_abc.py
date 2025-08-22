@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+⚠️ WARNING: This code was automatically translated from C++ to Python by an AI tool.
+It may contain inaccuracies, inefficient constructs, or logic errors introduced 
+during translation. Please review carefully and test thoroughly before using 
+in production.
+"""
+
 from dataclasses import dataclass
 import struct
 from collections import deque

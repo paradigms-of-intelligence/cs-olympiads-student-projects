@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-# Faithful translation of the provided C++ program into Python.
-# Keep logic identical to the C++ source.
+"""
+⚠️ WARNING: This code was automatically translated from C++ to Python by an AI tool.
+It may contain inaccuracies, inefficient constructs, or logic errors introduced 
+during translation. Please review carefully and test thoroughly before using 
+in production.
+"""
+
 import sys
 import struct
 from config import *

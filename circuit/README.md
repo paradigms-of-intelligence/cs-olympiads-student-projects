@@ -1,3 +1,7 @@
+# TODO
+- [ ] Print logs during executionx
+
+
 # Project Documentation
 
 ## 16_types gate network
