@@ -237,7 +237,7 @@ def print_network(prob, prob_id, left_nodes, right_nodes):
             f.write(int(right_nodes[i]).to_bytes(4, byteorder='little', signed=True))
     
 
-def alternative_network():
+def run_training_sequence():
     # Setup network architecture
 
     left_nodes = []
