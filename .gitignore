@@ -1,8 +1,10 @@
 */build/
 .clangd
 */CMakeFiles/
+__pycache__/
+venv/
+python/
 
-*/__pycache__/
 # File extensions
 *.txt
 *.bin
@@ -16,7 +18,7 @@
 *.synctex.gz
 *.npy
 *.orig
-
+*.pcy
 .*/ 
 vgcore.*
 
