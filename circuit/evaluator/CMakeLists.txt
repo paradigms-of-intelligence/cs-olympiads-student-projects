@@ -1,2 +1,0 @@
-add_executable(Evaluator_BIN evaluator.cpp)
-target_link_libraries(Evaluator_BIN PUBLIC CIRCUIT)

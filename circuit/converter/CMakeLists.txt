@@ -1,2 +1,0 @@
-add_executable(Converter_BIN convert_network.cpp)
-target_link_libraries(Converter_BIN PUBLIC CIRCUIT)
