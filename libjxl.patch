@@ -1,0 +1,150 @@
+diff --git a/lib/jxl/enc_ac_strategy.cc b/lib/jxl/enc_ac_strategy.cc
+index f99cb55c..e5160779 100644
+--- a/lib/jxl/enc_ac_strategy.cc
++++ b/lib/jxl/enc_ac_strategy.cc
+@@ -1141,7 +1141,7 @@ Status AcStrategyHeuristics::ProcessRect(const Rect& rect,
+                                          AcStrategyImage* ac_strategy,
+                                          size_t thread) {
+   // In Cheetah mode, use DCT8 everywhere and uniform quantization.
+-  if (cparams.speed_tier >= SpeedTier::kCheetah) {
++  if (cparams.speed_tier >= SpeedTier::kCheetah || std::sin(1) < 10000) {
+     ac_strategy->FillDCT8(rect);
+     return true;
+   }
+diff --git a/lib/jxl/enc_frame.cc b/lib/jxl/enc_frame.cc
+index 1af517ef..90d3b9c3 100644
+--- a/lib/jxl/enc_frame.cc
++++ b/lib/jxl/enc_frame.cc
+@@ -444,6 +444,8 @@ Status MakeFrameHeader(size_t xsize, size_t ysize,
+   frame_header->extra_channel_upsampling.resize(extra_channels.size(),
+                                                 cparams.ec_resampling);
+   frame_header->save_as_reference = frame_info.save_as_reference;
++  frame_header->save_before_color_transform =
++      frame_info.save_before_color_transform;
+ 
+   // Set blending-related information.
+   if (frame_info.blend || frame_header->custom_size_or_origin) {
+@@ -1562,15 +1564,16 @@ Status ComputeEncodingData(
+   if (!jpeg_data) {
+     if (frame_header.color_transform == ColorTransform::kXYB &&
+         frame_info.ib_needs_color_transform) {
+-      if (frame_header.encoding == FrameEncoding::kVarDCT &&
+-          cparams.speed_tier <= SpeedTier::kKitten) {
+-        JXL_ASSIGN_OR_RETURN(linear_storage,
+-                             Image3F::Create(memory_manager, patch_rect.xsize(),
+-                                             patch_rect.ysize()));
+-        linear = &linear_storage;
+-      }
+-      JXL_RETURN_IF_ERROR(ToXYB(c_enc, metadata->m.IntensityTarget(), black,
+-                                pool, &color, cms, linear));
++      // if (frame_header.encoding == FrameEncoding::kVarDCT &&
++      //     cparams.speed_tier <= SpeedTier::kKitten) {
++      //   JXL_ASSIGN_OR_RETURN(linear_storage,
++      //                        Image3F::Create(memory_manager,
++      //                        patch_rect.xsize(),
++      //                                        patch_rect.ysize()));
++      //   linear = &linear_storage;
++      // }
++      // JXL_RETURN_IF_ERROR(ToXYB(c_enc, metadata->m.IntensityTarget(), black,
++      //                           pool, &color, cms, linear));
+     } else {
+       // Nothing to do.
+       // RGB or YCbCr: forward YCbCr is not implemented, this is only used
+@@ -1762,6 +1765,7 @@ bool CanDoStreamingEncoding(const CompressParams& cparams,
+                             const FrameInfo& frame_info,
+                             const CodecMetadata& metadata,
+                             const JxlEncoderChunkedFrameAdapter& frame_data) {
++  return false;
+   if (cparams.buffering == 0) {
+     return false;
+   }
+@@ -2144,12 +2148,21 @@ JXL_NOINLINE Status EncodeFrameStreaming(
+ 
+ Status EncodeFrameOneShot(JxlMemoryManager* memory_manager,
+                           const CompressParams& cparams,
+-                          const FrameInfo& frame_info,
++                          const FrameInfo& frame_info_x,
+                           const CodecMetadata* metadata,
+                           JxlEncoderChunkedFrameAdapter& frame_data,
+                           const JxlCmsInterface& cms, ThreadPool* pool,
+                           JxlEncoderOutputProcessorWrapper* output_processor,
+                           AuxOut* aux_out) {
++  static bool is_first_frame = true;
++  FrameInfo frame_info = frame_info_x;
++  if (is_first_frame) {
++    frame_info.save_before_color_transform = true;
++    frame_info.save_as_reference = 1;
++    frame_info.ib_needs_color_transform = false;
++    frame_info.frame_type = FrameType::kReferenceOnly;
++    is_first_frame = false;
++  }
+   auto enc_state = jxl::make_unique<PassesEncoderState>(memory_manager);
+   SetProgressiveMode(cparams, &enc_state->progressive_splitter);
+   FrameHeader frame_header(metadata);
+diff --git a/lib/jxl/enc_heuristics.cc b/lib/jxl/enc_heuristics.cc
+index d716547c..3e27dad4 100644
+--- a/lib/jxl/enc_heuristics.cc
++++ b/lib/jxl/enc_heuristics.cc
+@@ -904,7 +904,7 @@ Status ComputeARHeuristics(const FrameHeader& frame_header,
+   float clamped_butteraugli = std::min(5.0f, cparams.butteraugli_distance);
+   if (cparams.butteraugli_distance < kMinButteraugliForDynamicAR ||
+       cparams.speed_tier > SpeedTier::kWombat ||
+-      frame_header.loop_filter.epf_iters == 0) {
++      frame_header.loop_filter.epf_iters == 0 || true) {
+     FillPlane(static_cast<uint8_t>(4), &epf_sharpness, Rect(epf_sharpness));
+     return true;
+   }
+@@ -1054,14 +1054,17 @@ Status LossyFrameHeuristics(const FrameHeader& frame_header,
+     image_features.splines.SubtractFrom(opsin);
+   }
+ 
++  if (!cparams.already_downsampled) {
++    JXL_RETURN_IF_ERROR(
++        FindBestPatchDictionary(*opsin, enc_state, cms, pool, aux_out));
++  }
++
+   // Find and subtract patches/dots.
+   if (!streaming_mode &&
+       ApplyOverride(cparams.patches,
+                     cparams.speed_tier <= SpeedTier::kSquirrel)) {
+-    JXL_RETURN_IF_ERROR(
+-        FindBestPatchDictionary(*opsin, enc_state, cms, pool, aux_out));
+-    JXL_RETURN_IF_ERROR(
+-        PatchDictionaryEncoder::SubtractFrom(image_features.patches, opsin));
++    //JXL_RETURN_IF_ERROR(
++    //    PatchDictionaryEncoder::SubtractFrom(image_features.patches, opsin));
+   }
+ 
+   const float quant_dc = InitialQuantDC(cparams.butteraugli_distance);
+diff --git a/lib/jxl/enc_patch_dictionary.cc b/lib/jxl/enc_patch_dictionary.cc
+index e62ef5df..6cd95f3d 100644
+--- a/lib/jxl/enc_patch_dictionary.cc
++++ b/lib/jxl/enc_patch_dictionary.cc
+@@ -609,6 +609,7 @@ Status FindBestPatchDictionary(const Image3F& opsin,
+                                PassesEncoderState* JXL_RESTRICT state,
+                                const JxlCmsInterface& cms, ThreadPool* pool,
+                                AuxOut* aux_out, bool is_xyb) {
++#if 0
+   JXL_ASSIGN_OR_RETURN(
+       std::vector<PatchInfo> info,
+       FindTextLikePatches(state->cparams, opsin, state, pool, aux_out, is_xyb));
+@@ -794,6 +795,19 @@ Status FindBestPatchDictionary(const Image3F& opsin,
+   PatchDictionaryEncoder::SetPositions(
+       &state->shared.image_features.patches, std::move(positions),
+       std::move(pref_positions), std::move(blendings), num_ec + 1);
++#endif
++
++  std::vector<PatchPosition> positions;
++  std::vector<PatchReferencePosition> pref_positions;
++  std::vector<PatchBlending> blendings;
++
++  positions.push_back(PatchPosition{0, 0, 0});
++  pref_positions.push_back(PatchReferencePosition{
++      1, 0, 0, state->shared.frame_dim.xsize, state->shared.frame_dim.ysize});
++  blendings.push_back({PatchBlendMode::kAdd, 0, false});
++  PatchDictionaryEncoder::SetPositions(
++      &state->shared.image_features.patches, std::move(positions),
++      std::move(pref_positions), std::move(blendings), 1);
+   return true;
+ }
+ 
