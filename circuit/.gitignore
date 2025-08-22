@@ -1,0 +1,24 @@
+*/build/
+.clangd
+*/CMakeFiles/
+
+# File extensions
+*.txt
+*.bin
+*.out
+*.gch
+*.exe
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.synctex.gz
+*.npy
+*.gz
+*.pyc
+
+.*/ 
+vgcore.*
+
+# Exceptions
+!requirements.txt
