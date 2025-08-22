@@ -235,7 +235,6 @@ def convert_network():
     toposort_nodes()
     replace_gates()
 
-    print(next_free_node-1)
     # Writing sequence
     write_int32_t(t2_ofstream, next_free_node - 1)
 

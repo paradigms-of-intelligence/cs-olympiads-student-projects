@@ -22,6 +22,7 @@ data = data.reshape(num_images, image_size, image_size, 1)
 output: list[str] = []
 idd = 0
 
+THRESHOLD = 0.5
 with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
     for image in data:
         buf = labels.read(1)
@@ -32,7 +33,7 @@ with open(f'testdata.txt' if dotest else 'training.txt', "w") as file:
             plt.show()
         for row in image:
             for p in row:
-                output.append("0" if p < 150 else "1")
+                output.append("0" if p < 255*THRESHOLD else "1")
         output.append(f"\n{buf[0]}\n")
         idd += 1
         if(idd%100 == 0): print(f"Zero: {idd}")

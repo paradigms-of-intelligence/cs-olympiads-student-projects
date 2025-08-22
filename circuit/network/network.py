@@ -322,6 +322,7 @@ def print_network(aus, prob, left_nodes, right_nodes):
                 f.write(int(left_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
                 f.write(int(right_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
 
+
 def run_training_sequence():
     '''Load architecture, train for EPOCH_COUNT epochs, and save network.'''
 
