@@ -15,14 +15,14 @@ def initialize_probabilities(index):
     p[random.randint(1,2)*2+1] = float(2)
     return p
 
+
 #Inference probability fitting
 FITTING = jnp.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) + 1.0
-batch_fitting_function = jax.jit(jax.vmap(lambda a: jnp.multiply(a, FITTING, in_axes = (0))))
+batch_fitting_function = jax.jit(jax.vmap(lambda a: jnp.multiply(a, FITTING), in_axes = (0)))
 
 
-DEBUG = 1
+DEBUG = 0
 
-@jax.jit
 def inference_function(id, prob, prob_id, left, right, values):
     p = prob[prob_id[id]]
     l = values[left[id]]
@@ -45,6 +45,7 @@ def inference_function(id, prob, prob_id, left, right, values):
     + p[15]
     )
     return sum
+
 layer_inference = jax.jit(jax.vmap(inference_function, in_axes = (0, None, None, None, None, None)))
 
 @jax.jit
@@ -58,28 +59,20 @@ def inference(layered_id, prob, prob_id, left_nodes, right_nodes, inputs):
     #Counter for the node range
     start_of_current_layer = INPUT_NODES+1
     #Setting input gate values
+    values = jnp.zeros((NETWORK_SIZE + 1,))
     values = values.at[1:INPUT_NODES+1].set(inputs)
 
     #Iterate through layers
     for c in range(1, len(layered_id)):
         end_of_current_layer = start_of_current_layer + len(layered_id[c])
-        aus = layer_inference(layered_id, prob, prob_id, left_nodes, right_nodes, values)
+        aus = layer_inference(layered_id[c], prob, prob_id, left_nodes, right_nodes, values)
         values = values.at[start_of_current_layer:end_of_current_layer].set(aus)
         start_of_current_layer = end_of_current_layer
 
     # Compute category means (MNIST: 10 classes)
-    category_size = OUTPUT_NODES // 10
-    output_values = []
-    OUTPUT_NODES_LIST = [x for x in range(NETWORK_SIZE-OUTPUT_NODES_LIST+1, NETWORK_SIZE+1)]
-
-    for cat in range(10):
-        node_ids = jnp.array(OUTPUT_NODES_LIST[cat * category_size : (cat + 1) * category_size])
-        category_values = values[node_ids]
-        output_values.append(jnp.mean(category_values))
-
-    output_values = jnp.array(output_values, jnp.float32)
-
-    return output_values
+    output_values = values[-OUTPUT_NODES:]
+    output_values = jnp.reshape(output_values, (10, -1))
+    return jnp.mean(output_values, axis=-1)
 
 @jax.jit
 def loss_function(layered_id, prob, prob_id, left_nodes, right_nodes, values, answer):
@@ -120,18 +113,23 @@ def input_network():
             LEFT.append(left)
             RIGHT.append(right)
             PROB_ID.append(prob_id)
+    
+    PROB_ID = jnp.array(PROB_ID)
+    LEFT = jnp.array(LEFT)
+    RIGHT = jnp.array(RIGHT)
 
     # Calculate the layers
     l = [0 for _ in range(0, NETWORK_SIZE+1)] # for each node save its layer
     layered_id = [[i for i in range (1, INPUT_NODES+1)]] # for each layer save node ids
-    att = 0 # current number of layers
     for id in range(INPUT_NODES+1, NETWORK_SIZE+1):
-        cl = max(l[LEFT[id]], l[RIGHT[id]])
-        if cl >= att: 
-            att+=1
+        cl = max(l[LEFT[id]], l[RIGHT[id]]) + 1
+        while cl >= len(layered_id): 
             layered_id.append([])
         layered_id[cl].append(id)
-        l[id] = cl+1
+        l[id] = cl
+
+    for i in range (len(layered_id)):
+        layered_id[i] = jnp.array(layered_id[i]) 
     
     return layered_id, LEFT, RIGHT, PROB_ID
 
@@ -147,6 +145,7 @@ def read_values(file):
         while True:
             line = image.readline()
             if not line:
+
                 break
 
             # read training inputanswer
@@ -216,6 +215,9 @@ def train_network(layered_id, prob, prob_id, left_nodes, right_nodes):
             # Update parameters
             updates, opt_state = optimizer.update(gradients, opt_state, params=prob)
             prob = optax.apply_updates(prob, updates)
+        
+        if DEBUG:
+            print("Gradient:", jnp.linalg.norm(gradients))
 
         print("Epoch " + str(epoch+1) + " Loss: " + str(loss_sum * BATCH_SIZE / TOTAL_SIZE))
 
@@ -223,32 +225,30 @@ def train_network(layered_id, prob, prob_id, left_nodes, right_nodes):
             test_network(layered_id, prob, prob_id, left_nodes, right_nodes, values_list_testing, answers_list_testing)
     return prob
 
-def print_network(aus, prob, left_nodes, right_nodes):
+def print_network(prob, prob_id, left_nodes, right_nodes):
     # Print the network
-    with open("trained_network.bin", "wb") as f:
+    with open(TRAINED_NETWORK_16GATES_FILE, "wb") as f:
         # Write the trained network
-        for current_layer in range(0, len(aus)):
-            for i in range(0, len(aus[current_layer])):
-                gate_index = int(jnp.argmax(prob[current_layer + 1][i]))
-                f.write(gate_index.to_bytes(4, byteorder='little', signed=True))
-                f.write(int(aus[current_layer][i]).to_bytes(4, byteorder='little', signed=True))
-                f.write(int(left_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
-                f.write(int(right_nodes[current_layer + 1][i]).to_bytes(4, byteorder='little', signed=True))
+        for i in range (INPUT_NODES+1, NETWORK_SIZE+1):
+            gate_index = int(jnp.argmax(prob[prob_id[i]]))
+            f.write(gate_index.to_bytes(4, byteorder='little', signed=True))
+            f.write(i.to_bytes(4, byteorder='little', signed=True))
+            f.write(int(left_nodes[i]).to_bytes(4, byteorder='little', signed=True))
+            f.write(int(right_nodes[i]).to_bytes(4, byteorder='little', signed=True))
     
 
-def an():
+def alternative_network():
     # Setup network architecture
 
     left_nodes = []
     right_nodes = []
-    aus = []
 
     #Input the network architecture 
     layered_id, left_nodes, right_nodes, prob_id =  input_network()
-    prob = jnp.array([initialize_probabilities(x) for x in range (NETWORK_SIZE)])
+    prob = jnp.array([initialize_probabilities(x) for x in range (NETWORK_SIZE+1)])
 
     #Train network
     prob = train_network(layered_id, prob, prob_id, left_nodes, right_nodes)
 
     # Print the network to binary file
-    print_network(aus, prob, left_nodes, right_nodes)
+    print_network(prob, prob_id, left_nodes, right_nodes)

@@ -1,7 +1,7 @@
 from config import *
 from generator.generator import generate_network_custom_distribution,generate_network_probabilistic_model
 from network.network import run_training_sequence
-from network.network_alternative import an
+from network.network_alternative import alternative_network
 
 from converter.converter_standard import convert_network
 from evaluator.evaluator import evaluate_network
@@ -15,7 +15,7 @@ def main():
     
     generate_network_probabilistic_model()
 
-    an()
+    alternative_network()
 
     if(ABC_FORMAT):
         convert_network()

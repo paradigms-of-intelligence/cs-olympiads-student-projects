@@ -2,6 +2,10 @@ from dataclasses import dataclass
 import logging, coloredlogs
 import os
 
+ENV = [["XLA_FLAGS", "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"],
+       ["TF_GPU_ALLOCATOR", "cuda_malloc_async"],
+       ["XLA_PYTHON_CLIENT_PREALLOCATE", "false"]]
+
 #Filepaths (relative to exec folder)
 NETWORK_ARCHITECTURE_FILE = "./exec/network_architecture.txt"
 TRAINING_DATA_FILE = "./data/training.txt"
@@ -10,7 +14,6 @@ TRAINED_NETWORK_16GATES_FILE = "./exec/trained_network_16gates.bin"
 TRAINED_NETWORK_2GATES_FILE = "./exec/trained_network_2gates.bin"
 
 ABC_FORMAT = 1
-
 VERBOSE = True
 
 INPUT_NODES = 784
@@ -31,10 +34,6 @@ LEARNING_RATE = 0.01
 WEIGHT_DECAY = 0.0005
 MAX_TEMPERATURE = 3
 
-
-ENV = [["XLA_FLAGS", "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=12"],
-       ["TF_GPU_ALLOCATOR", "cuda_malloc_async"],
-       ["XLA_PYTHON_CLIENT_PREALLOCATE", "false"]]
 
 log: logging.Logger | None = None
 

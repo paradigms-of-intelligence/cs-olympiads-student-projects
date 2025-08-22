@@ -2,6 +2,7 @@
 .clangd
 */CMakeFiles/
 
+*/__pycache__/
 # File extensions
 *.txt
 *.bin
@@ -14,9 +15,14 @@
 *.fdb_latexmk
 *.synctex.gz
 *.npy
+*.orig
 
 .*/ 
 vgcore.*
+
+convert_network
+evaluate_network
+network_architecture.txt
 
 # Exceptions
 !requirements.txt
