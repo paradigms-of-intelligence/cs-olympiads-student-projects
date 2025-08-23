@@ -54,6 +54,6 @@ else
         source venv/bin/activate
     fi
 fi
-
-echo "Virtual environment 'venv' is configured and active."
+mkdir -p out
+echo "Virtual environment 'venv' is configured."
 echo "Build finished successfully."
