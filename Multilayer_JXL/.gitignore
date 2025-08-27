@@ -1,0 +1,5 @@
+build/
+venv/
+*.txt
+*.jxl
+!requirements.txt
