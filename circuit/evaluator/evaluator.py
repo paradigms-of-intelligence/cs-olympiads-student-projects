@@ -11,7 +11,7 @@ import struct
 from config import *
 
 
-# helper to read signed 32-bit little-endian integer (matches typical C++ behaviour on little-endian machines)
+# helper to read signed 32-bit little-endian integer
 def read_int32_t(f):
     data = f.read(4)
     return struct.unpack("<i", data)[0]
@@ -56,7 +56,7 @@ class AndNot_network:
             self.value[i] = bool(inputs[i - 1])
 
     def getvalue(self, id_):
-        """Return boolean value for a (possibly negated) id, matching the C++ logic exactly."""
+        """Return boolean value for a (possibly negated) id."""
         c = False
         if id_ < 0:
             # negated reference
@@ -93,7 +93,7 @@ class AndNot_network:
         """
         g = 0.0
         cnt = 0.0
-        category = self.O // 10  # integer division, same as C++ `int category = O/10`
+        category = self.O // 10  # integer division
 
         # category_ids is list of (on_count, category_index)
         category_ids = [(0, 0) for _ in range(10)]
@@ -105,13 +105,11 @@ class AndNot_network:
                     on += 1
             category_ids[counter] = (on, counter)
 
-        # sort descending by (on_count, category_index) to match sort(..., greater<...>) in C++
+        # sort descending by (on_count, category_index)
         category_ids.sort(reverse=True)
 
         maximum = category_ids[0][0]
         i = 0
-        # THIS replicates the C++ `while (category_ids[i].first == maximum && i < 10)`
-        # which checks the .first before checking bounds — kept here to be faithful.
         while category_ids[i][0] == maximum and i < 10:
             cnt += 1.0
             if category_ids[i][1] == correct:
@@ -127,14 +125,14 @@ def make_test(net: AndNot_network, infile):
     Read one sample from text `infile`, feed into `net`, compute network, and return net.guess(correct).
     Mirrors the C++ make_test: read one line of bits, then one line with correct label.
     """
-    # read input image line (C++ getline removes newline)
+    # read input image line
     input_image = infile.readline()
     input_image = input_image.rstrip("\n")
 
     # build input boolean list of length INPUT_NODES
     input_values = [False] * INPUT_NODES
     for i in range(INPUT_NODES):
-        # assume line length >= INPUT_NODES; identical to C++ indexing
+        # assume line length >= INPUT_NODES
         input_values[i] = input_image[i] == "1"
 
     net.input_into(input_values)

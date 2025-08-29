@@ -1,5 +1,4 @@
 from random import seed, randint, shuffle, choices
-import random
 import numpy as np
 
 from config import *
@@ -170,5 +169,3 @@ def generate_network_probabilistic_model(rnd_seed: int = 0):
             for l, r in zip(nl, nr):
                 f.write(f"{l} {r} {cnt}\n")
                 cnt += 1
-
-        # optional footer

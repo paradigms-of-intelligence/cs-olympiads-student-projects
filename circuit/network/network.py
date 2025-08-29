@@ -31,7 +31,7 @@ batch_fitting_function = jax.jit(
 )
 
 
-DEBUG = 0
+DEBUG = False
 
 
 def inference_function(id, prob, prob_id, left, right, values):
@@ -171,7 +171,7 @@ def input_network():
 
 
 def read_values(file):
-    # Autosaving
+    # Caching input 
     if os.path.exists(file + ".values.npy"):
         return jnp.load(file + ".values.npy"), jnp.load(file + ".answers.npy")
 

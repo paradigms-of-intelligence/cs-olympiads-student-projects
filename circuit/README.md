@@ -37,7 +37,7 @@ circuit
 
 1. Create a Python environment with the following (minimum) dependencies:
 
-   * Python 3.10+ (repo shows Python 3.13 bytecode but the code is standard Python 3)
+   * Python 3.10+
    * jax, jaxlib (with CPU/GPU backend as desired)
    * optax
    * numpy

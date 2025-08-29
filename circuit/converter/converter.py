@@ -23,12 +23,11 @@ class Node:
         return f"Node(type={self.type}, id={self.id}, link_a={self.link_a}, link_b={self.link_b})"
 
 
-# Global storage (kept same names as C++ for clarity)
+# Global storage
 input_nodes = []  # list of Node
 toposorted_nodes = []  # list of Node
 final_nodes = []  # list of Node
 
-# Number of new nodes, avoid clashes between ids
 next_free_node = 0
 first_output_id = 0
 
@@ -41,15 +40,12 @@ def read_int32_t(f):
 
 
 def write_int32_t(f, value):
-    # Ensure value fits in signed 32-bit range
-    # pack will wrap as in C; we replicate typical behaviour by masking then repacking if needed
-    # but keep simple and pack as signed 32-bit.
+    # Pack as signed 32-bit (little-endian).
     f.write(struct.pack("<i", int(value)))
 
 
 def toposort_nodes():
     """
-    Replicates the C++ toposort_nodes exactly.
     Builds reverse links, counts incoming non-constant links, and performs Kahn's algorithm.
     """
     # Use same container semantics
@@ -82,9 +78,8 @@ def toposort_nodes():
         processed_count += 1
 
         if node_id > INPUT_NODES:
-            # Indexing in C++ used: input_nodes[node_id-INPUT_NODES-1]
+            # Indexing input_nodes[node_id-INPUT_NODES-1]
             idx = node_id - INPUT_NODES - 1
-            # Defensive check: if index out of range, abort as C++ would likely do
             toposorted_nodes.append(input_nodes[idx])
 
         for edge in reverse_link.get(node_id, []):
@@ -92,8 +87,6 @@ def toposort_nodes():
             link_count[edge] -= 1
             if link_count[edge] == 0:
                 process_queue.append(edge)
-
-    # Validate processed nodes count equals node_count - INPUT_NODES (same check as C++)
 
 
 def replace_gates():
@@ -202,8 +195,6 @@ def replace_gates():
         elif typ == 15:  # ALWAYS 1
             new_nodes.append(Node(0, __id, ALWAYS_TRUE, ALWAYS_TRUE))
 
-        # Validate same as C++
-
         # Append to final_nodes
         for t in range(len(new_nodes)):
             final_nodes.append(new_nodes[t])
@@ -215,8 +206,6 @@ def convert_network():
     t16_ifstream = open(TRAINED_NETWORK_16GATES_FILE, "rb")
 
     t2_ofstream = open(TRAINED_NETWORK_2GATES_FILE, "wb")
-
-    # Read node_count
 
     first_output_id = NETWORK_SIZE - OUTPUT_NODES + 1
     next_free_node = NETWORK_SIZE + 1
@@ -230,7 +219,7 @@ def convert_network():
 
         input_nodes.append(Node(v0, v1, v2, v3))
 
-    # Sort input_nodes by id as in C++
+    # Sort input_nodes by id
     input_nodes.sort(key=lambda n: n.id)
 
     # Topological sort and gate replacement
