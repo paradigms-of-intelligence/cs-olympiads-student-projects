@@ -1,0 +1,8 @@
+chex==0.1.90
+flaxmodels @ git+https://github.com/matthias-wright/flaxmodels.git@09bc77215032375d124e3f1eba828dd89c80a850
+jax[cuda12]==0.7.0
+jax-codex @ git+https://github.com/balle-lab/codex.git@91a1b1cc38318b087ae90397a3150094bf82d1f8
+numpy==2.3.2
+optax==0.2.5
+pillow==11.3.0
+equinox==0.13.0
