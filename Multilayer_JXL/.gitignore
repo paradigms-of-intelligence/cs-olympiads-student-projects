@@ -1,0 +1,7 @@
+build/
+venv/
+out/
+*.txt
+*.jxl
+!requirements.txt
+!CMakeLists.txt
